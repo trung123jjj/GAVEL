@@ -211,8 +211,9 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
           <div className="overflow-hidden rounded-sm bg-white shadow-sm dark:bg-zinc-900">
             <div className="relative aspect-square">
               {(() => {
-                const allImages = item.images && item.images.length > 0 ? item.images : (item.image ? [item.image] : ["/next.svg"]);
-                const src = allImages[currentImageIdx] || allImages[0];
+                const validImages = (item.images ?? []).filter((img): img is string => typeof img === "string" && img.trim().length > 0);
+                const allImages = validImages.length > 0 ? validImages : (item.image && item.image.trim() ? [item.image] : ["/next.svg"]);
+                const src = allImages[currentImageIdx] || allImages[0] || "/next.svg";
                 return (
                   <>
                     <Image src={src} alt={item.title} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-contain p-8" />
@@ -289,7 +290,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
               Đăng bởi
               <Link href={`/user/${item.sellerId}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
-                  {item.sellerAvatar ? (
+                  {item.sellerAvatar && item.sellerAvatar.trim() ? (
                     <Image src={item.sellerAvatar} alt={item.seller} fill sizes="24px" className="object-cover" />
                   ) : (
                     <span className="flex h-full w-full items-center justify-center text-[11px] font-bold text-zinc-500">

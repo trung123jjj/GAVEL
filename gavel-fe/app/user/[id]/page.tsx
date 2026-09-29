@@ -55,7 +55,8 @@ function StarRating({ value, onChange, size = "md" }: { value: number; onChange?
   );
 }
 
-function mediaSrc(url: string) {
+function mediaSrc(url: string | null | undefined) {
+  if (!url || !url.trim()) return null;
   if (url.startsWith("http")) return url;
   return `${API_BASE}${url}`;
 }
@@ -94,6 +95,7 @@ function ReviewCard({ review }: { review: Review }) {
               <div className="mt-2 flex flex-wrap gap-2">
                 {review.media.map((m, i) => {
                   const src = mediaSrc(m.url);
+                  if (!src) return null;
                   return m.type === "image" ? (
                     <button key={i} onClick={() => setLightbox(src)} className="relative h-20 w-20 overflow-hidden rounded-sm bg-zinc-100 dark:bg-zinc-800">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -427,8 +429,8 @@ function UserProfileContent() {
         <div className="mx-auto flex max-w-7xl items-center gap-5 px-4 py-6">
           {/* Avatar */}
           <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
-            {profile.avatar ? (
-              <img src={profile.avatar} alt={profile.username} className="h-full w-full object-cover" />
+            {profile.avatar && profile.avatar.trim() ? (
+              <Image src={profile.avatar} alt={profile.username} fill sizes="80px" className="object-cover" />
             ) : (
               <span className="flex h-full w-full items-center justify-center text-2xl font-bold text-zinc-400">
                 {profile.username?.charAt(0)?.toUpperCase()}

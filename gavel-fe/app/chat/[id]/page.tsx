@@ -23,11 +23,12 @@ function timeLabel(iso: string) {
 }
 
 function Avatar({ msg }: { msg: ChatMessage }) {
+  const avatarSrc = msg.avatar && msg.avatar.trim() ? msg.avatar : null;
   return (
     <span className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
-      {msg.avatar ? (
+      {avatarSrc ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={msg.avatar} alt="" className="h-full w-full object-cover" />
+        <img src={avatarSrc} alt="" className="h-full w-full object-cover" />
       ) : (
         <span className="flex h-full w-full items-center justify-center text-xs font-bold text-zinc-500">
           {msg.senderName.charAt(0).toUpperCase()}
@@ -232,7 +233,7 @@ export default function ChatDetailPage() {
                 className="flex items-center gap-3 transition-opacity hover:opacity-80"
               >
                 <span className="relative h-9 w-9 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
-                  {conv.otherUser.avatar ? (
+                  {conv.otherUser.avatar && conv.otherUser.avatar.trim() ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={conv.otherUser.avatar}

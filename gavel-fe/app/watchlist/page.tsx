@@ -27,6 +27,7 @@ function AuctionCard({ item, isWinner, onRemove }: { item: AuctionItem; isWinner
   const [started, setStarted] = useState(item.status !== 'pending');
   const targetTime = started ? item.endTime : item.startTime;
   const [time, setTime] = useState(getTimeLeft(targetTime));
+  const cardImage = item.image && item.image.trim() ? item.image : '/next.svg';
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -43,7 +44,7 @@ function AuctionCard({ item, isWinner, onRemove }: { item: AuctionItem; isWinner
     <div className="flex flex-col overflow-hidden rounded-sm bg-white shadow-sm transition-shadow hover:shadow-md dark:bg-zinc-900">
       <Link href={`/auction/${item.id}`} className="group flex flex-1 flex-col">
       <div className="relative aspect-square overflow-hidden bg-zinc-50 dark:bg-zinc-800">
-        <Image src={item.image} alt={item.title} fill sizes="(max-width: 640px) 50vw, 300px" className="object-contain p-4 transition-transform duration-300 group-hover:scale-105" />
+        <Image src={cardImage} alt={item.title} fill sizes="(max-width: 640px) 50vw, 300px" className="object-contain p-4 transition-transform duration-300 group-hover:scale-105" />
         <span className={`absolute left-2 top-2 rounded-sm px-2 py-0.5 text-[11px] font-semibold ${item.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : item.status === 'ended' ? 'bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'}`}>
           {item.status === 'active' ? 'Đang diễn ra' : item.status === 'ended' ? 'Đã kết thúc' : 'Sắp diễn ra'}
         </span>

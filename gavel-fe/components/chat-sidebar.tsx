@@ -38,6 +38,7 @@ export default function ChatSidebar({
         conversations.map((c) => {
           const active =
             String(c.id) === activeId || pathname === `/chat/${c.otherUser.id}`;
+          const avatarSrc = c.otherUser.avatar && c.otherUser.avatar.trim() ? c.otherUser.avatar : null;
           return (
             <Link
               key={c.id}
@@ -49,10 +50,10 @@ export default function ChatSidebar({
               }`}
             >
               <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
-                {c.otherUser.avatar ? (
+                {avatarSrc ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={c.otherUser.avatar}
+                    src={avatarSrc}
                     alt=""
                     className="h-full w-full object-cover"
                   />

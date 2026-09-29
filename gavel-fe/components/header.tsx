@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -107,8 +108,8 @@ export default function Header() {
                   className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                 >
                   <span className="relative flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-white/20 text-[11px] font-bold uppercase">
-                    {user.avatar ? (
-                      <img src={user.avatar} alt="" className="h-full w-full object-cover" />
+                    {user.avatar && user.avatar.trim() ? (
+                      <Image src={user.avatar} alt={user.username} fill sizes="24px" className="object-cover" />
                     ) : (
                       user.username.charAt(0)
                     )}
@@ -236,8 +237,8 @@ export default function Header() {
               </svg>
             </Link>
             <Link href={`/user/${user.id}`} className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-white/20 text-sm font-bold text-white uppercase hover:opacity-80 transition-opacity">
-              {user.avatar ? (
-                <img src={user.avatar} alt="" className="h-full w-full object-cover" />
+              {user.avatar && user.avatar.trim() ? (
+                <Image src={user.avatar} alt={user.username} fill sizes="32px" className="object-cover" />
               ) : (
                 user.username.charAt(0)
               )}

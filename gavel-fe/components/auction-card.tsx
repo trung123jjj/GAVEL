@@ -27,6 +27,8 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function AuctionCard({ item }: { item: AuctionItem }) {
   const [timeLeft, setTimeLeft] = useState(getTimeLeft(item.endTime));
+  const cardImage = item.image && item.image.trim() ? item.image : "/next.svg";
+  const sellerAvatar = item.sellerAvatar && item.sellerAvatar.trim() ? item.sellerAvatar : null;
 
   useEffect(() => {
     const timer = setInterval(() => setTimeLeft(getTimeLeft(item.endTime)), 1000);
@@ -40,9 +42,10 @@ export default function AuctionCard({ item }: { item: AuctionItem }) {
       {/* Image */}
       <div className="relative aspect-square overflow-hidden bg-zinc-50 dark:bg-zinc-800">
         <Image
-          src={item.image}
+          src={cardImage}
           alt={item.title}
           fill
+          sizes="(max-width: 640px) 50vw, 300px"
           className="object-contain p-4 transition-transform duration-300 group-hover:scale-105"
         />
         <div className="absolute left-2 top-2">
@@ -63,8 +66,8 @@ export default function AuctionCard({ item }: { item: AuctionItem }) {
 
         <p className="flex items-center gap-1.5 text-[12px] text-zinc-400">
           <span className="relative h-4 w-4 shrink-0 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
-            {item.sellerAvatar ? (
-              <Image src={item.sellerAvatar} alt={item.seller} fill sizes="16px" className="object-cover" />
+            {sellerAvatar ? (
+              <Image src={sellerAvatar} alt={item.seller} fill sizes="16px" className="object-cover" />
             ) : (
               <span className="flex h-full w-full items-center justify-center text-[9px] font-bold text-zinc-500">
                 {item.seller?.charAt(0)?.toUpperCase()}
