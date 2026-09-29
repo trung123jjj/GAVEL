@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0%" stop-color="#FFD54A"/>
+      <stop offset="100%" stop-color="#FFB300"/>
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="#EAF6FF"/>
+
+  <!-- abstract yellow blob only (balloon and text removed per request) -->
+  <path d="M600 100c80 40 140 140 120 240s-120 160-200 200-160 40-240 0-160-120-140-220 140-200 240-220 220-40 220-40z" fill="#FFE36E" opacity="0.95"/>
+</svg>
