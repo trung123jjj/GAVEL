@@ -99,27 +99,38 @@ export default function SellPage() {
   // Edit mode: load auction data
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const id = params.get("edit");
-    if (!id) return;
-    setEditId(id);
-    setEditLoading(true);
-    api.getAuction(id).then((data) => {
-      setForm({
-        title: data.title,
-        description: data.description,
-        selectedCategories: data.categories || [],
-        customCategory: "",
-        startingPrice: formatNumberInput(String(data.startingPrice)),
-        minIncrement: formatNumberInput(String(data.minIncrement)),
-        startTime: toLocalDatetimeFromISO(data.startTime),
-        endTime: toLocalDatetimeFromISO(data.endTime),
-      });
-      if (data.images && data.images.length > 0) {
-        setExistingImages(data.images);
-      } else if (data.image) {
-        setExistingImages([data.image]);
+    const auctionId = params.get("edit");
+    if (!auctionId) return;
+    const confirmedAuctionId: string = auctionId;
+
+    async function loadEditAuction() {
+      setEditId(confirmedAuctionId);
+      setEditLoading(true);
+      try {
+        const data = await api.getAuction(confirmedAuctionId);
+        setForm({
+          title: data.title,
+          description: data.description,
+          selectedCategories: data.categories || [],
+          customCategory: "",
+          startingPrice: formatNumberInput(String(data.startingPrice)),
+          minIncrement: formatNumberInput(String(data.minIncrement)),
+          startTime: toLocalDatetimeFromISO(data.startTime),
+          endTime: toLocalDatetimeFromISO(data.endTime),
+        });
+        if (data.images && data.images.length > 0) {
+          setExistingImages(data.images);
+        } else if (data.image) {
+          setExistingImages([data.image]);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setEditLoading(false);
       }
-    }).catch(console.error).finally(() => setEditLoading(false));
+    }
+
+    void loadEditAuction();
   }, []);
 
   function validate() {

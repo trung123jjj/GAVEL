@@ -109,17 +109,18 @@ export default function WatchlistPage() {
   const [removeTarget, setRemoveTarget] = useState<AuctionItem | null>(null);
 
   useEffect(() => {
-    const favoriteIds = getFavorites();
-    const stored = localStorage.getItem("user");
-    const currentUser = stored ? JSON.parse(stored) : null;
+    async function loadWatchlist() {
+      const favoriteIds = getFavorites();
+      const stored = localStorage.getItem("user");
+      const currentUser = stored ? JSON.parse(stored) : null;
 
-    if (favoriteIds.length === 0) {
-      setLoading(false);
-      return;
-    }
+      if (favoriteIds.length === 0) {
+        setLoading(false);
+        return;
+      }
 
-    api.getAuctions({ limit: 500 })
-      .then(async (auctionData: AuctionItem[] | { items: AuctionItem[] }) => {
+      try {
+        const auctionData = await api.getAuctions({ limit: 500 }) as AuctionItem[] | { items: AuctionItem[] };
         const data = Array.isArray(auctionData) ? auctionData : auctionData.items;
         const followed = data.filter((a) => favoriteIds.includes(String(a.id)));
 
@@ -163,9 +164,14 @@ export default function WatchlistPage() {
         setUpcoming(upcomingItems);
         setFollowing(allFollowing);
         setWon(wonItems);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    void loadWatchlist();
   }, []);
 
   const total = upcoming.length + following.length + won.length;

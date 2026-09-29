@@ -347,10 +347,16 @@ function UserProfileContent() {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (stored) {
-      try { setCurrentUser(JSON.parse(stored)); } catch { setCurrentUser(null); }
+    async function loadCurrentUser() {
+      try {
+        const data = await api.me();
+        setCurrentUser(data.user);
+      } catch {
+        setCurrentUser(null);
+      }
     }
+
+    void loadCurrentUser();
   }, []);
 
   const isOwner = currentUser !== null && String(currentUser.id) === id;

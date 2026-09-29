@@ -39,7 +39,10 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const itemRef = useRef(item);
-  itemRef.current = item;
+
+  useEffect(() => {
+    itemRef.current = item;
+  }, [item]);
 
   useEffect(() => {
     params.then((p) => {
