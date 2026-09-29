@@ -1,0 +1,48 @@
+# ==========================================================
+# GAVEL Backend
+# ==========================================================
+
+# Dependencies
+node_modules/
+
+# Environment — chỉ commit .env.example, không bao giờ commit .env thật
+.env
+.env.*
+!.env.example
+
+# Khóa / chứng thư
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+secrets/
+*credentials*
+*.netrc
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+*.pid
+
+# Uploads — dữ liệu người dùng, không đưa lên git.
+# Thư mục được tự tạo lại khi chạy (xem routes/upload.js).
+uploads/*
+!uploads/.gitkeep
+
+# Test
+coverage/
+.nyc_output/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+ehthumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+*.swp
+*~

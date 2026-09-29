@@ -1,0 +1,37 @@
+{
+  "name": "gavel-be",
+  "version": "1.0.0",
+  "description": "Backend cho nền tảng đấu giá trực tuyến GAVEL (Express + Sequelize + Socket.io + BullMQ)",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node app.js",
+    "migrate": "node migrate.js up",
+    "migrate:status": "node migrate.js status",
+    "test": "jest --runInBand --forceExit",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "bullmq": "^6.1.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.2",
+    "express-validator": "^7.3.2",
+    "helmet": "^8.3.0",
+    "ioredis": "^6.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.11.0",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.23.0",
+    "sequelize": "^6.37.8",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2",
+    "socket.io-client": "^4.8.4",
+    "supertest": "^7.2.2"
+  }
+}
