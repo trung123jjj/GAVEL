@@ -1,0 +1,48 @@
+# Chạy toàn bộ hệ thống GAVEL: docker compose up --build
+# Mặc định .env của gavel-be được sử dụng làm env cho backend.
+services:
+  mysql:
+    image: mysql:8
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-gavel_db}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: ./gavel-be
+    restart: unless-stopped
+    env_file:
+      - ./gavel-be/.env
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      REDIS_URL: redis://redis:6379
+      CLIENT_URL: http://localhost:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mysql
+      - redis
+
+  frontend:
+    build: ./gavel-fe
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  mysql-data:
