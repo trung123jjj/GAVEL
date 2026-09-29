@@ -23,6 +23,16 @@
 # misc
 .DS_Store
 *.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_ed25519
+secrets/
+*credentials*
+*.netrc
 
 # debug
 npm-debug.log*
@@ -32,6 +42,18 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# user-uploaded runtime files
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# archives and backups
+*.zip
+*.bak
+*.backup
+*.old
+*.orig
 
 # vercel
 .vercel
