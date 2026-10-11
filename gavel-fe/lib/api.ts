@@ -16,6 +16,7 @@ function requiresLogin(path: string, method = 'GET') {
   if (path === '/auth/recovery-email') return true;
   if (path === '/bids' || path === '/upload' || path.startsWith('/chat/')) return true;
   if (/^\/users\/(avatar|notifications|watchlist)(\/|$)/.test(path)) return true;
+  if (path.startsWith('/admin/')) return true;
   if (/^\/reviews\/user\/[^/]+$/.test(path)) return normalizedMethod === 'POST';
   if (path === '/orders' || /^\/orders\/\d+\/status$/.test(path)) return true;
   if (path === '/auctions') return normalizedMethod === 'POST';
@@ -166,6 +167,18 @@ export const api = {
 
   markNotificationsRead: () =>
     request('/users/notifications/read', { method: 'POST' }),
+
+  getAdminUsers: (params: { page: number; limit: number; q?: string }) => {
+    const query = new URLSearchParams({
+      page: String(params.page),
+      limit: String(params.limit),
+      ...(params.q ? { q: params.q } : {})
+    });
+    return request(`/admin/users?${query}`);
+  },
+
+  setAdminUserStatus: (id: number, isActive: boolean) =>
+    request(`/admin/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ isActive }) }),
 
   getOrders: () => request('/orders'),
 
