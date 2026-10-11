@@ -57,9 +57,11 @@ Mở `gavel-be\.env` và cập nhật các giá trị phù hợp:
 
 | Biến | Mục đích |
 | --- | --- |
-| `DB_HOST`, `DB_PORT` | Địa chỉ và cổng MySQL; local thường là `localhost`, `3306` |
+| `DB_HOST`, `DB_PORT` | Host và port từ dịch vụ MySQL/TiDB; local thường là `localhost`, `3306` |
 | `DB_NAME` | Tên database ứng dụng |
 | `DB_USER`, `DB_PASSWORD` | Tài khoản MySQL |
+| `DB_SSL` | Đặt `true` để bật TLS cho database khác; TiDB Cloud Public Endpoint tự bật TLS theo `DB_HOST` |
+| `DB_SSL_CA` | Tùy chọn: toàn bộ nội dung CA PEM nếu Node.js không xác minh được chứng chỉ server bằng CA hệ thống |
 | `JWT_SECRET` | Chuỗi ngẫu nhiên tối thiểu 32 ký tự; không dùng giá trị mẫu |
 | `CLIENT_URL` | Origin frontend, local thường là `http://localhost:3000` |
 | `PUBLIC_API_URL` | Origin backend nhìn từ trình duyệt, local thường là `http://localhost:3001` |
@@ -73,6 +75,8 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
 SMTP cần thông tin từ nhà cung cấp email. Port 587 thường dùng `SMTP_SECURE=false`; port 465 thường dùng `SMTP_SECURE=true`. Nếu chưa cấu hình SMTP, các thao tác gửi email sẽ không hoạt động, nhưng server vẫn có thể khởi động.
+
+Với TiDB Cloud Public Endpoint, dùng `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` do TiDB cấp và tạo database riêng (ví dụ `gavel_db`) thay vì dùng database hệ thống `sys`. Backend tự bật TLS tối thiểu 1.2 và xác minh chứng chỉ dựa trên hostname TiDB. Nếu Node.js báo lỗi xác minh chứng chỉ, tải CA root được TiDB hướng dẫn và dán toàn bộ nội dung PEM vào `DB_SSL_CA`.
 
 ### 3. Cấu hình frontend
 
