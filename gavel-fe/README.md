@@ -19,6 +19,7 @@ Token **không** lưu trong `localStorage`. Backend set cookie `httpOnly` và m�
 
 - Access token sống 15 phút, refresh token 30 ngày (cookie ghim vào path `/api/auth`).
 - Khi gặp 401, `lib/api.ts` tự gọi `/auth/refresh` rồi thử lại request (nhiều request cùng lúc chỉ refresh một lần).
+- Nếu một thao tác cần đăng nhập vẫn trả 401 sau khi thử refresh, popup đăng nhập dùng chung sẽ hiện trên mọi trang.
 - `GET /auth/me` là nguồn sự thật về việc đang đăng nhập. `localStorage.user` chỉ là cache để hiển thị, không dùng để xác thực.
 - `notifySessionChanged()` trong `lib/socket.ts` báo cho socket biết phiên đổi để tạo lại kết nối với danh tính mới (socket lấy danh tính từ cookie qua `withCredentials`).
 - Khôi phục mật khẩu dùng email đã xác minh; tài khoản cũ có thể gắn email trong menu tài khoản.
