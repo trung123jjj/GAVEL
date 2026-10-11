@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3001';
+const API_URL = new URL(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api');
+const API_ORIGIN = API_URL.origin;
 
 const nextConfig: NextConfig = {
   turbopack: {
@@ -9,6 +10,12 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "placehold.co" },
+      {
+        protocol: API_URL.protocol === "https:" ? "https" : "http",
+        hostname: API_URL.hostname,
+        port: API_URL.port,
+        pathname: "/uploads/**",
+      },
     ],
   },
   async rewrites() {

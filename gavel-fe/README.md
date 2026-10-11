@@ -42,6 +42,8 @@ File `.env.local`:
 NEXT_PUBLIC_API_URL=http://localhost:3001/api
 ```
 
+`next.config.ts` derives the backend image host and upload rewrite from `NEXT_PUBLIC_API_URL`, so upload images work with Next.js `<Image>` in local and production deployments.
+
 Chạy:
 
 ```bash
