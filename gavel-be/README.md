@@ -62,6 +62,28 @@ Server mặc định chạy ở `http://localhost:3001`.
 
 Để bật xác minh email và khôi phục mật khẩu, điền `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` trong `.env`. `CLIENT_URL` phải là URL frontend để tạo link email. Không commit thông tin SMTP.
 
+### Chuẩn bị production
+
+- Cấp SMTP từ nhà cung cấp đã xác minh domain/sender; lưu thông tin xác thực bằng secret manager của môi trường deploy, không commit `.env`. Port 587 thường dùng `SMTP_SECURE=false` (STARTTLS), port 465 dùng `SMTP_SECURE=true`. Kiểm tra trước khi bật traffic:
+
+  ```bash
+  npm run smtp:verify
+  ```
+
+  Lệnh chỉ kiểm tra kết nối và xác thực SMTP, không gửi email. Sau đó thử đăng ký/xác minh và quên mật khẩu trên môi trường staging. Lỗi SMTP trong runtime trả HTTP 503 cho thao tác email; server vẫn khởi động và các chức năng không phụ thuộc email vẫn hoạt động. Hệ thống chưa xếp hàng/gửi bù email bị lỗi, nên cần theo dõi log và cho phép người dùng thử gửi lại.
+
+- Thiết lập giám sát uptime gọi `GET /health`: trả 200 khi DB sẵn sàng, 503 khi DB không khả dụng; phần `components.scheduler` cho biết đang dùng BullMQ hay fallback in-process. Log request và lỗi được ghi ra stdout/stderr để nền tảng deploy thu thập. Cấu hình cảnh báo theo HTTP 5xx, lỗi khởi động, `SMTP không khả dụng`, `Redis không khả dụng`, và `Chuyển sang bộ lập lịch in-process`; không ghi log secrets hoặc nội dung email. Dùng dịch vụ theo dõi lỗi tập trung của nền tảng deploy hoặc tích hợp một error tracker sau khi chọn nhà cung cấp.
+
+- Sao lưu MySQL theo lịch, mã hóa và lưu ngoài máy chủ ứng dụng; giữ chính sách retention phù hợp. Với MySQL InnoDB, lệnh dưới đây hỏi mật khẩu tương tác và ghi thẳng ra file (không đưa password vào command history):
+
+  ```powershell
+  mysqldump --host=DB_HOST --user=DB_USER --password --single-transaction --routines --triggers --events --hex-blob gavel_db --result-file="D:\gavel-backups\gavel_db.sql"
+  ```
+
+  Thay `DB_HOST`, `DB_USER` bằng giá trị triển khai, tạo thư mục backup trước khi chạy. Thử khôi phục định kỳ vào một database riêng bằng MySQL client (`mysql --host=DB_HOST --user=DB_USER --password gavel_db_restore`, sau đó chạy `source D:/gavel-backups/gavel_db.sql;` trong client) và kiểm tra dữ liệu/migration. Sao lưu riêng thư mục `uploads` nếu vẫn lưu ảnh trên filesystem; ưu tiên storage bền vững ngoài instance cho production.
+
+- Redis fallback cho phép tiến trình phục vụ khi Redis mất kết nối, nhưng không thay thế Redis bền vững trong production. Theo dõi cảnh báo fallback và khôi phục Redis; tránh scale nhiều instance trước khi đánh giá scheduler và cơ chế lưu trữ upload trên hạ tầng thực tế.
+
 Sinh `JWT_SECRET` an toàn:
 
 ```bash

@@ -2,7 +2,7 @@ jest.mock('../services/emailService', () => ({ sendMail: jest.fn().mockResolvedV
 
 const { sendMail } = require('../services/emailService');
 const { request, app, resetDb, registerUser, accessTokenFrom, auth } = require('./helpers');
-const { User } = require('../models');
+const { User, sequelize } = require('../models');
 
 function cookieNamed(res, name) {
     const cookies = res.headers['set-cookie'] || [];
@@ -32,6 +32,37 @@ describe('Auth', () => {
 
         // Refresh cookie chỉ gửi cho /api/auth để giảm bề mặt bị lộ.
         expect(refresh).toMatch(/Path=\/api\/auth/i);
+    });
+
+    test('dịch vụ email lỗi chỉ làm thao tác email thất bại, server và DB vẫn sẵn sàng', async () => {
+        sendMail.mockRejectedValueOnce(Object.assign(new Error('SMTP unavailable'), { status: 503 }));
+
+        const resend = await request(app)
+            .post('/api/auth/email/verification/resend')
+            .send({ email: 'user_auth_1@example.test' });
+        expect(resend.status).toBe(503);
+
+        const health = await request(app).get('/health');
+        expect(health.status).toBe(200);
+        expect(health.body.status).toBe('ok');
+        expect(health.body.components.database).toBe('ok');
+    });
+
+    test('health check báo DB không sẵn sàng mà không lộ thông tin nội bộ', async () => {
+        const authenticate = jest.spyOn(sequelize, 'authenticate').mockRejectedValueOnce(new Error('database credentials leaked'));
+        const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            const health = await request(app).get('/health');
+            expect(health.status).toBe(503);
+            expect(health.body).toMatchObject({
+                status: 'unavailable',
+                components: { database: 'unavailable' }
+            });
+            expect(JSON.stringify(health.body)).not.toContain('credentials');
+        } finally {
+            authenticate.mockRestore();
+            consoleError.mockRestore();
+        }
     });
 
     test('đăng ký username trùng lặp bị từ chối', async () => {

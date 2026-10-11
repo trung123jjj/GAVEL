@@ -8,6 +8,7 @@
     "dev": "node app.js",
     "migrate": "node migrate.js up",
     "migrate:status": "node migrate.js status",
+    "smtp:verify": "node scripts/check-smtp.js",
     "test": "jest --runInBand --forceExit",
     "test:watch": "jest --watch"
   },

@@ -10,7 +10,7 @@ const errorHandler = require('./middleware/errorHandler');
 const { sequelize } = require('./models');
 const { runMigrations } = require('./migrations/runner');
 const setupSocket = require('./socket');
-const { initScheduler, rescheduleAllActiveAuctions } = require('./services/auctionScheduler');
+const { initScheduler, rescheduleAllActiveAuctions, getMode } = require('./services/auctionScheduler');
 const { helmetOptions } = require('./config/security');
 
 const authRoutes = require('./routes/auth');
@@ -34,7 +34,7 @@ if (process.env.NODE_ENV === 'production') {
 
 // Global middleware
 app.use(helmet(helmetOptions()));
-app.use(morgan('dev'));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(corsMiddleware);
 app.use(express.json());
 app.use(cookieParser());
@@ -53,6 +53,28 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/orders', orderRoutes);
+
+app.get('/health', async (req, res) => {
+    try {
+        await sequelize.authenticate();
+        return res.json({
+            status: 'ok',
+            components: {
+                database: 'ok',
+                scheduler: getMode()
+            }
+        });
+    } catch (err) {
+        console.error('[health] Database readiness check failed:', err.message);
+        return res.status(503).json({
+            status: 'unavailable',
+            components: {
+                database: 'unavailable',
+                scheduler: getMode()
+            }
+        });
+    }
+});
 
 app.get('/', (req, res) => {
     res.send('API Running');
