@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { api } from "@/lib/api";
+import { ApiError, api } from "@/lib/api";
 import { LoginRequiredError, syncFavorites, updateFavorite } from "@/lib/favorites";
 import { joinAuctionRoom, leaveAuctionRoom, onBidNew, onAuctionEnded } from "@/lib/socket";
 import type { AuctionItem } from "@/types/auction";
@@ -222,6 +222,12 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
         setTimeout(() => setTimeExtended(false), 3000);
       }
     } catch (err: unknown) {
+      if (err instanceof ApiError && err.status === 401) {
+        setBidError("");
+        setBidSuccess(false);
+        setShowLoginModal(true);
+        return;
+      }
       setBidError(err instanceof Error ? err.message : "Đặt giá thất bại");
       setBidSuccess(false);
     }
