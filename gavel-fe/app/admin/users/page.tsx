@@ -139,6 +139,10 @@ export default function AdminUsersPage() {
         <div className="mb-6">
           <p className="text-sm font-medium text-primary">Khu vực quản trị</p>
           <h1 className="mt-1 text-2xl font-bold text-zinc-800 dark:text-zinc-100">Quản lý tài khoản</h1>
+          <div className="mt-4 flex gap-2">
+            <Link href="/admin/users" className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-white">Tài khoản</Link>
+            <Link href="/admin/auctions" className="rounded-sm border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-white dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900">Sản phẩm</Link>
+          </div>
         </div>
 
         {checkingAccess ? (

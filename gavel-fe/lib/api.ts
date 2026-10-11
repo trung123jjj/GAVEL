@@ -180,6 +180,19 @@ export const api = {
   setAdminUserStatus: (id: number, isActive: boolean) =>
     request(`/admin/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ isActive }) }),
 
+  getAdminAuctions: (params: { page: number; limit: number; q?: string; status?: string }) => {
+    const query = new URLSearchParams({
+      page: String(params.page),
+      limit: String(params.limit),
+      ...(params.q ? { q: params.q } : {}),
+      ...(params.status ? { status: params.status } : {})
+    });
+    return request(`/admin/auctions?${query}`);
+  },
+
+  removeAdminAuction: (id: number, reason: string) =>
+    request(`/admin/auctions/${id}`, { method: 'DELETE', body: JSON.stringify({ reason }) }),
+
   getOrders: () => request('/orders'),
 
   updateOrderStatus: (id: number, status: 'paid' | 'shipped' | 'completed') =>
