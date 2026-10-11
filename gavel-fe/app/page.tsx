@@ -16,7 +16,7 @@ function HomeContent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([api.getAuctions({ limit: 200, sort: "ending_soon" }), api.getCategories()])
+    Promise.all([api.getAuctions({ limit: 200, sort: "ending_soon", status: "active" }), api.getCategories()])
       .then(([auctionData, catData]) => {
         const items = (auctionData as { items: AuctionItem[] }).items || auctionData;
         setAuctions(items);
