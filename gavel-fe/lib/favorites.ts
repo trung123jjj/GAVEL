@@ -3,6 +3,13 @@ import { ApiError, api } from "@/lib/api";
 const STORAGE_KEY = 'gavel_favorites';
 const OWNER_KEY = 'gavel_favorites_user';
 
+export class LoginRequiredError extends Error {
+  constructor() {
+    super("Vui lòng đăng nhập để sử dụng danh sách theo dõi.");
+    this.name = "LoginRequiredError";
+  }
+}
+
 export function getFavorites(): string[] {
   if (typeof window === 'undefined') return [];
   try {
@@ -35,46 +42,45 @@ function getCachedUserId(): string | null {
 }
 
 export async function syncFavorites(): Promise<string[]> {
-  let userId = getCachedUserId();
-  if (!userId) {
-    try {
-      const { user } = await api.me();
-      userId = String(user.id);
-      localStorage.setItem('user', JSON.stringify(user));
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 401) return getFavorites();
-      throw error;
-    }
-  }
-
+  const userId = getCachedUserId();
   const previousOwner = localStorage.getItem(OWNER_KEY);
   let localFavorites = getFavorites();
-  if (previousOwner && previousOwner !== userId) {
+  if (previousOwner && userId && previousOwner !== userId) {
     localFavorites = [];
     storeFavorites(localFavorites);
   }
 
-  const { auctionIds } = await api.syncWatchlist(localFavorites);
+  let auctionIds: number[];
+  try {
+    ({ auctionIds } = await api.syncWatchlist(localFavorites));
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) throw new LoginRequiredError();
+    throw error;
+  }
   const favorites = auctionIds.map(String);
   storeFavorites(favorites);
-  localStorage.setItem(OWNER_KEY, userId);
+  if (userId) localStorage.setItem(OWNER_KEY, userId);
   return favorites;
 }
 
 export async function updateFavorite(id: string | number, isFavorite: boolean): Promise<void> {
   const favoriteId = String(id);
+  try {
+    if (isFavorite) {
+      await api.addWatchlistItem(favoriteId);
+    } else {
+      await api.removeWatchlistItem(favoriteId);
+    }
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) throw new LoginRequiredError();
+    throw error;
+  }
+
   const favorites = getFavorites().filter((item) => item !== favoriteId);
   if (isFavorite) favorites.push(favoriteId);
   storeFavorites(favorites);
-
   const userId = getCachedUserId();
-  if (!userId) return;
-  localStorage.setItem(OWNER_KEY, userId);
-  if (isFavorite) {
-    await api.addWatchlistItem(favoriteId);
-  } else {
-    await api.removeWatchlistItem(favoriteId);
-  }
+  if (userId) localStorage.setItem(OWNER_KEY, userId);
 }
 
 export function isFavorite(id: string | number): boolean {

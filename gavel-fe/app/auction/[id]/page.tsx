@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
-import { isFavorite, syncFavorites, updateFavorite } from "@/lib/favorites";
+import { LoginRequiredError, syncFavorites, updateFavorite } from "@/lib/favorites";
 import { joinAuctionRoom, leaveAuctionRoom, onBidNew, onAuctionEnded } from "@/lib/socket";
 import type { AuctionItem } from "@/types/auction";
 import Header from "@/components/header";
@@ -54,10 +54,10 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
           setTargetTime(data.status === 'pending' ? data.startTime : data.endTime);
           setBidAmount(String(data.currentPrice + data.minIncrement));
           setTimeLeft(getTimeLeft(data.status === 'pending' ? data.startTime : data.endTime));
-          setFavorited(isFavorite(p.id));
           void syncFavorites()
             .then((favoriteIds) => setFavorited(favoriteIds.includes(String(p.id))))
             .catch((error: unknown) => {
+              if (error instanceof LoginRequiredError) return;
               console.error('watchlist sync error:', error);
               setFavoriteError(error instanceof Error ? error.message : 'Không thể đồng bộ danh sách theo dõi');
             });
@@ -177,11 +177,15 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
   async function handleFavoriteToggle() {
     if (!item) return;
     const nextFavorite = !favorited;
-    setFavorited(nextFavorite);
     setFavoriteError("");
     try {
       await updateFavorite(item.id, nextFavorite);
+      setFavorited(nextFavorite);
     } catch (error: unknown) {
+      if (error instanceof LoginRequiredError) {
+        setFavoriteError(error.message);
+        return;
+      }
       console.error('watchlist update error:', error);
       setFavoriteError(error instanceof Error ? error.message : 'Không thể cập nhật danh sách theo dõi');
     }
@@ -306,7 +310,12 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
                 )}
               </button>
               {favoriteError && (
-                <p role="alert" className="text-xs text-red-600">{favoriteError}</p>
+                <p role="alert" className="text-xs text-red-600">
+                  {favoriteError}
+                  {favoriteError.startsWith("Vui lòng đăng nhập") && (
+                    <> <Link href="/auth/signin" className="font-medium underline">Đăng nhập</Link></>
+                  )}
+                </p>
               )}
             </div>
             <p className="mt-1.5 flex items-center gap-2 text-sm text-zinc-400">

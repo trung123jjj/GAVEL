@@ -6,7 +6,7 @@ import Image from "next/image";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { api } from "@/lib/api";
-import { getFavorites, syncFavorites, updateFavorite } from "@/lib/favorites";
+import { getFavorites, LoginRequiredError, syncFavorites, updateFavorite } from "@/lib/favorites";
 import type { AuctionItem } from "@/types/auction";
 
 function formatPrice(n: number) {
@@ -109,6 +109,7 @@ export default function WatchlistPage() {
   const [loading, setLoading] = useState(true);
   const [removeTarget, setRemoveTarget] = useState<AuctionItem | null>(null);
   const [watchlistError, setWatchlistError] = useState("");
+  const [requiresLogin, setRequiresLogin] = useState(false);
 
   useEffect(() => {
     async function loadWatchlist() {
@@ -120,8 +121,15 @@ export default function WatchlistPage() {
         const stored = localStorage.getItem("user");
         currentUser = stored ? JSON.parse(stored) : null;
       } catch (error) {
+        if (error instanceof LoginRequiredError) {
+          setRequiresLogin(true);
+          setLoading(false);
+          return;
+        }
         console.error('watchlist sync error:', error);
         setWatchlistError(error instanceof Error ? error.message : 'Không thể đồng bộ danh sách theo dõi');
+        setLoading(false);
+        return;
       }
 
       if (favoriteIds.length === 0) {
@@ -196,8 +204,14 @@ export default function WatchlistPage() {
       await updateFavorite(removeTarget.id, false);
       setWatchlistError("");
     } catch (error) {
+      if (error instanceof LoginRequiredError) {
+        setRequiresLogin(true);
+        setWatchlistError(error.message);
+        return;
+      }
       console.error('watchlist remove error:', error);
       setWatchlistError(error instanceof Error ? error.message : 'Không thể cập nhật danh sách theo dõi');
+      return;
     }
     setUpcoming((prev) => prev.filter((a) => String(a.id) !== String(removeTarget.id)));
     setFollowing((prev) => prev.filter((a) => String(a.id) !== String(removeTarget.id)));
@@ -218,8 +232,14 @@ export default function WatchlistPage() {
             {watchlistError}
           </p>
         )}
-
-        {loading ? (
+        {requiresLogin ? (
+          <div className="rounded-sm bg-white py-16 text-center shadow-sm dark:bg-zinc-900">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">Vui lòng đăng nhập để xem và quản lý danh sách theo dõi.</p>
+            <Link href="/auth/signin" className="mt-4 inline-block rounded-sm bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover">
+              Đăng nhập
+            </Link>
+          </div>
+        ) : loading ? (
           <div className="rounded-sm bg-white py-16 text-center text-zinc-400 shadow-sm dark:bg-zinc-900">
             Đang tải...
           </div>
