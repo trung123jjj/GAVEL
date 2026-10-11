@@ -8,6 +8,7 @@ Frontend cho dự án GAVEL (đấu giá trực tuyến): Next.js 16 (App Router
 - Trang chủ: banner, thống kê, tìm kiếm, lọc theo danh mục và sắp xếp.
 - Đặt giá (kiểm tra giá tối thiểu, bước giá, +5 bước).
 - Theo dõi (watchlist): lưu trên tài khoản và đồng bộ giữa thiết bị; khách chưa đăng nhập vẫn dùng được localStorage.
+- Footer liên kết tới trang thông tin, hướng dẫn sử dụng và bộ lọc danh mục sản phẩm.
 - Chat realtime giữa người mua và người bán (báo rõ lỗi khi hết rate limit hoặc chưa đăng nhập).
 - Đăng bán / chỉnh sửa / xóa sản phẩm (upload nhiều ảnh/video).
 - Dark mode, responsive.
