@@ -5,10 +5,12 @@ const { getIO } = require('./io');
 
 let mode = 'in-process';
 let queue = null;
+let worker = null;
 
 const inProcessTimers = new Map();
 
 const QUEUE_NAME = 'auction-jobs';
+const REDIS_READY_TIMEOUT_MS = 5000;
 
 function parseRedisUrl(url) {
     try {
@@ -27,6 +29,16 @@ function parseRedisUrl(url) {
 
 function redisOptions() {
     return { ...parseRedisUrl(REDIS_URL), maxRetriesPerRequest: null };
+}
+
+function withTimeout(promise, timeoutMs) {
+    let timeout;
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => {
+            timeout = setTimeout(() => reject(new Error('Redis connection timed out')), timeoutMs);
+        })
+    ]).finally(() => clearTimeout(timeout));
 }
 
 async function checkRedis() {
@@ -211,6 +223,7 @@ function scheduleInProcessClose(auctionId, endTime) {
 
 function scheduleInProcessStart(auctionId, startTime) {
     const delay = Math.max(0, new Date(startTime).getTime() - Date.now());
+    clearTimer(`start-${auctionId}`);
     const timer = setTimeout(async () => {
         inProcessTimers.delete(`start-${auctionId}`);
         try { await startAuction(auctionId); } catch { /* handled */ }
@@ -225,10 +238,37 @@ async function enqueueBullmq(name, data, at) {
     await queue.add(name, data, { jobId, delay, removeOnComplete: 500, attempts: 5, backoff: { type: 'exponential', delay: 5000 } });
 }
 
+function closeBullMQResources() {
+    const currentQueue = queue;
+    const currentWorker = worker;
+    queue = null;
+    worker = null;
+
+    currentWorker?.close(true).catch((err) => {
+        console.error('[scheduler] BullMQ worker close error:', err.message);
+    });
+    currentQueue?.close().catch((err) => {
+        console.error('[scheduler] BullMQ queue close error:', err.message);
+    });
+}
+
+function switchToInProcess(reason) {
+    if (mode !== 'bullmq') return;
+
+    mode = 'in-process';
+    console.warn(`[scheduler] ${reason}. Chuyển sang bộ lập lịch in-process.`);
+    closeBullMQResources();
+    rescheduleAllActiveAuctions().catch((err) => {
+        console.error('[scheduler] Không thể lên lịch lại phiên đấu giá:', err.message);
+    });
+}
+
 function scheduleClose(auctionId, endTime) {
     if (mode === 'bullmq') {
         enqueueBullmq('close-auction', { auctionId }, endTime).catch((err) => {
             console.error('[scheduler] enqueue close-auction error:', err.message);
+            switchToInProcess('BullMQ không thể thêm job đóng phiên đấu giá');
+            scheduleInProcessClose(auctionId, endTime);
         });
     } else {
         scheduleInProcessClose(auctionId, endTime);
@@ -239,6 +279,8 @@ function scheduleStart(auctionId, startTime) {
     if (mode === 'bullmq') {
         enqueueBullmq('start-auction', { auctionId }, startTime).catch((err) => {
             console.error('[scheduler] enqueue start-auction error:', err.message);
+            switchToInProcess('BullMQ không thể thêm job mở phiên đấu giá');
+            scheduleInProcessStart(auctionId, startTime);
         });
     } else {
         scheduleInProcessStart(auctionId, startTime);
@@ -249,6 +291,8 @@ function enqueueOutbid(auctionId, newBidderId, newAmount) {
     if (mode === 'bullmq') {
         queue.add('notify-outbid', { auctionId, newBidderId, newAmount }, { removeOnComplete: 500, attempts: 3 }).catch((err) => {
             console.error('[scheduler] enqueue notify-outbid error:', err.message);
+            switchToInProcess('BullMQ không thể thêm job thông báo vượt giá');
+            setImmediate(() => notifyOutbid(auctionId, newBidderId, newAmount));
         });
     } else {
         setImmediate(() => notifyOutbid(auctionId, newBidderId, newAmount));
@@ -258,12 +302,17 @@ function enqueueOutbid(auctionId, newBidderId, newAmount) {
 async function initScheduler() {
     const available = await checkRedis();
     if (available) {
+        let initializationError = null;
         try {
             const connection = redisOptions();
             queue = new Queue(QUEUE_NAME, { connection });
-            queue.on('error', (err) => console.error('[scheduler] BullMQ queue error:', err.message));
+            queue.on('error', (err) => {
+                console.error('[scheduler] BullMQ queue error:', err.message);
+                if (mode !== 'bullmq') initializationError = err;
+                else switchToInProcess('Mất kết nối Redis');
+            });
 
-            const worker = new Worker(
+            worker = new Worker(
                 QUEUE_NAME,
                 async (job) => {
                     if (job.name === 'close-auction') await closeAuction(job.data.auctionId);
@@ -273,12 +322,19 @@ async function initScheduler() {
                 { connection }
             );
             worker.on('failed', (job, err) => console.error(`[scheduler] job ${job?.name}#${job?.data?.auctionId} failed:`, err.message));
-            worker.on('error', (err) => console.error('[scheduler] BullMQ worker error:', err.message));
+            worker.on('error', (err) => {
+                console.error('[scheduler] BullMQ worker error:', err.message);
+                if (mode !== 'bullmq') initializationError = err;
+                else switchToInProcess('Mất kết nối Redis');
+            });
+
+            await withTimeout(Promise.all([queue.waitUntilReady(), worker.waitUntilReady()]), REDIS_READY_TIMEOUT_MS);
+            if (initializationError) throw initializationError;
             mode = 'bullmq';
             console.log('[scheduler] Redis connected — dùng BullMQ cho background jobs.');
         } catch (err) {
-            queue = null;
             mode = 'in-process';
+            closeBullMQResources();
             console.warn(`[scheduler] Khởi tạo BullMQ thất bại (${err.message}). Dùng bộ lập lịch in-process.`);
         }
     } else {
