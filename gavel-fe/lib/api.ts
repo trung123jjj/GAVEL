@@ -11,8 +11,15 @@ export class ApiError extends Error {
 export const LOGIN_REQUIRED_EVENT = 'gavel:login-required';
 let loginRequiredPending = false;
 
-function requiresLogin(path: string) {
-  return !path.startsWith('/auth/') || path === '/auth/recovery-email';
+function requiresLogin(path: string, method = 'GET') {
+  const normalizedMethod = method.toUpperCase();
+  if (path === '/auth/recovery-email') return true;
+  if (path === '/bids' || path === '/upload' || path.startsWith('/chat/')) return true;
+  if (/^\/users\/(avatar|notifications|watchlist)(\/|$)/.test(path)) return true;
+  if (/^\/reviews\/user\/[^/]+$/.test(path)) return normalizedMethod === 'POST';
+  if (path === '/auctions') return normalizedMethod === 'POST';
+  if (/^\/auctions\/[^/]+$/.test(path)) return ['PUT', 'DELETE'].includes(normalizedMethod);
+  return false;
 }
 
 function notifyLoginRequired() {
@@ -50,6 +57,7 @@ async function refreshSession(): Promise<boolean> {
 }
 
 async function request(path: string, options: RequestInit = {}, isRetry = false) {
+  const needsLogin = requiresLogin(path, options.method);
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers: Record<string, string> = { ...(options.headers as Record<string, string> || {}) };
   if (!isFormData && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
@@ -61,11 +69,11 @@ async function request(path: string, options: RequestInit = {}, isRetry = false)
   });
 
   // Access token ngắn hạn có thể hết hạn giữa chừng — thử làm mới rồi gọi lại.
-  if (res.status === 401 && !isRetry && requiresLogin(path)) {
+  if (res.status === 401 && !isRetry && needsLogin) {
     const refreshed = await refreshSession();
     if (refreshed) return request(path, options, true);
   }
-  if (res.status === 401 && requiresLogin(path)) {
+  if (res.status === 401 && needsLogin) {
     notifyLoginRequired();
   }
 
