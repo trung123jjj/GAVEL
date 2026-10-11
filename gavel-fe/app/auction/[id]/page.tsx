@@ -37,6 +37,12 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
   const [timeExtended, setTimeExtended] = useState(false);
   const [favorited, setFavorited] = useState(false);
   const [favoriteError, setFavoriteError] = useState("");
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState("inappropriate");
+  const [reportDetails, setReportDetails] = useState("");
+  const [reportError, setReportError] = useState("");
+  const [reportSuccess, setReportSuccess] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const itemRef = useRef(item);
@@ -200,6 +206,27 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
     }
   }
 
+  async function handleReportSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!item) return;
+    setReportSubmitting(true);
+    setReportError("");
+    setReportSuccess("");
+    try {
+      const result = await api.createAuctionReport(String(item.id), {
+        reason: reportReason,
+        details: reportDetails
+      });
+      setReportSuccess(result.message || "Đã gửi báo cáo cho quản trị viên.");
+      setShowReportModal(false);
+      setReportDetails("");
+    } catch (error) {
+      setReportError(error instanceof ApiError ? error.message : "Không thể gửi báo cáo. Vui lòng thử lại.");
+    } finally {
+      setReportSubmitting(false);
+    }
+  }
+
   async function handleBid() {
     if (!item) return;
     const val = Number(bidAmount);
@@ -323,8 +350,21 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
                   </span>
                 )}
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setReportError("");
+                  setReportSuccess("");
+                  setShowReportModal(true);
+                }}
+                className="shrink-0 rounded-sm border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-600 transition-colors hover:border-red-300 hover:text-red-600 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-red-800 dark:hover:text-red-400"
+              >
+                Báo cáo
+              </button>
               {favoriteError && <p role="alert" className="text-xs text-red-600">{favoriteError}</p>}
             </div>
+            {reportSuccess && <p role="status" className="mt-2 text-sm text-green-600">{reportSuccess}</p>}
+            {reportError && !showReportModal && <p role="alert" className="mt-2 text-sm text-red-600">{reportError}</p>}
             <p className="mt-1.5 flex items-center gap-2 text-sm text-zinc-400">
               Đăng bởi
               <Link href={`/user/${item.sellerId}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -546,6 +586,52 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
           <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{item.description}</p>
         </div>
       </section>
+
+      {showReportModal && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setShowReportModal(false)}
+        >
+          <form
+            onSubmit={handleReportSubmit}
+            onClick={(event) => event.stopPropagation()}
+            className="w-full max-w-lg rounded-sm bg-white p-6 shadow-xl dark:bg-zinc-900"
+          >
+            <h2 className="text-lg font-bold text-zinc-800 dark:text-zinc-100">Báo cáo sản phẩm</h2>
+            <p className="mt-1 text-sm text-zinc-500">Báo cáo sẽ được gửi đến quản trị viên để xem xét.</p>
+            <label htmlFor="report-reason" className="mt-5 block text-sm font-medium text-zinc-700 dark:text-zinc-200">Lý do</label>
+            <select
+              id="report-reason"
+              value={reportReason}
+              onChange={(event) => setReportReason(event.target.value)}
+              className="mt-1 h-10 w-full rounded-sm border border-zinc-300 bg-white px-3 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+            >
+              <option value="inappropriate">Nội dung không phù hợp</option>
+              <option value="fraud">Có dấu hiệu lừa đảo</option>
+              <option value="prohibited">Sản phẩm bị cấm</option>
+              <option value="misleading">Thông tin gây hiểu lầm</option>
+              <option value="other">Lý do khác</option>
+            </select>
+            <label htmlFor="report-details" className="mt-4 block text-sm font-medium text-zinc-700 dark:text-zinc-200">Mô tả thêm (không bắt buộc)</label>
+            <textarea
+              id="report-details"
+              value={reportDetails}
+              onChange={(event) => setReportDetails(event.target.value)}
+              maxLength={1000}
+              rows={4}
+              placeholder="Cung cấp thêm thông tin giúp quản trị viên xem xét..."
+              className="mt-1 w-full resize-y rounded-sm border border-zinc-300 p-3 text-sm outline-none focus:border-primary dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+            />
+            {reportError && <p role="alert" className="mt-2 text-sm text-red-600">{reportError}</p>}
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setShowReportModal(false)} className="rounded-sm border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700 dark:text-zinc-200">Hủy</button>
+              <button type="submit" disabled={reportSubmitting} className="rounded-sm bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">
+                {reportSubmitting ? "Đang gửi..." : "Gửi báo cáo"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <div className="mt-auto">
         <Footer />

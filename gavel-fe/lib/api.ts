@@ -17,6 +17,7 @@ function requiresLogin(path: string, method = 'GET') {
   if (path === '/bids' || path === '/upload' || path.startsWith('/chat/')) return true;
   if (/^\/users\/(avatar|notifications|watchlist)(\/|$)/.test(path)) return true;
   if (path.startsWith('/admin/')) return true;
+  if (/^\/auctions\/\d+\/reports$/.test(path)) return true;
   if (/^\/reviews\/user\/[^/]+$/.test(path)) return normalizedMethod === 'POST';
   if (path === '/orders' || /^\/orders\/\d+\/status$/.test(path)) return true;
   if (path === '/auctions') return normalizedMethod === 'POST';
@@ -192,6 +193,21 @@ export const api = {
 
   removeAdminAuction: (id: number, reason: string) =>
     request(`/admin/auctions/${id}`, { method: 'DELETE', body: JSON.stringify({ reason }) }),
+
+  createAuctionReport: (id: string, data: { reason: string; details: string }) =>
+    request(`/auctions/${encodeURIComponent(id)}/reports`, { method: 'POST', body: JSON.stringify(data) }),
+
+  getAdminReports: (params: { page: number; limit: number; status: string }) => {
+    const query = new URLSearchParams({
+      page: String(params.page),
+      limit: String(params.limit),
+      status: params.status
+    });
+    return request(`/admin/reports?${query}`);
+  },
+
+  updateAdminReportStatus: (id: number, status: 'resolved' | 'dismissed') =>
+    request(`/admin/reports/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
 
   getOrders: () => request('/orders'),
 

@@ -164,6 +164,7 @@ export default function AdminAuctionsPage() {
           <div className="mt-4 flex gap-2">
             <Link href="/admin/users" className="rounded-sm border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-white dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900">Tài khoản</Link>
             <Link href="/admin/auctions" className="rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-white">Sản phẩm</Link>
+            <Link href="/admin/reports" className="rounded-sm border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-white dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900">Báo cáo</Link>
           </div>
         </div>
 
