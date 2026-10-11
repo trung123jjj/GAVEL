@@ -1,5 +1,5 @@
 const { request, app, resetDb, registerUser, auth, accessTokenFrom, activeAuctionPayload } = require('./helpers');
-const { User, Auction, Bid, Order, Notification } = require('../models');
+const { User, Auction, Bid, Order, Notification, AuctionReport } = require('../models');
 
 describe('Admin user management', () => {
     let adminUser;
@@ -123,6 +123,12 @@ describe('Admin user management', () => {
             .send(activeAuctionPayload({ title: 'Sản phẩm vi phạm' }));
         const auction = await Auction.findByPk(created.body.id);
         await Bid.create({ auction_id: auction.id, user_id: bidder.user.id, amount: 150000 });
+        const report = await AuctionReport.create({
+            auction_id: auction.id,
+            reporter_id: bidder.user.id,
+            reason: 'fraud',
+            details: 'Thông tin có dấu hiệu không chính xác'
+        });
         const order = await Order.create({
             auction_id: auction.id,
             seller_id: seller.user.id,
@@ -145,6 +151,7 @@ describe('Admin user management', () => {
         expect(auction.removal_reason).toBe('Sản phẩm vi phạm quy định đăng bán');
         expect(auction.status).toBe('ended');
         expect(order.status).toBe('cancelled');
+        expect((await AuctionReport.findByPk(report.id)).status).toBe('resolved');
         expect(await Bid.count({ where: { auction_id: auction.id } })).toBe(1);
         expect(await Notification.count({ where: { auction_id: auction.id } })).toBe(2);
         const sellerNotification = await Notification.findOne({

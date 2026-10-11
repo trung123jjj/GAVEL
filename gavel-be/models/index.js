@@ -11,10 +11,16 @@ const Order = require('./Order');
 const Notification = require('./Notification');
 const UserWatchlist = require('./UserWatchlist');
 const AccountToken = require('./AccountToken');
+const AuctionReport = require('./AuctionReport');
 
 // User → Auction (seller)
 User.hasMany(Auction, { foreignKey: 'seller_id', as: 'auctions' });
 Auction.belongsTo(User, { foreignKey: 'seller_id', as: 'seller' });
+
+Auction.hasMany(AuctionReport, { foreignKey: 'auction_id', as: 'reports' });
+AuctionReport.belongsTo(Auction, { foreignKey: 'auction_id', as: 'auction' });
+User.hasMany(AuctionReport, { foreignKey: 'reporter_id', as: 'auctionReports' });
+AuctionReport.belongsTo(User, { foreignKey: 'reporter_id', as: 'reporter' });
 
 // Auction ↔ Category (many-to-many)
 Auction.belongsToMany(Category, { through: AuctionCategory, foreignKey: 'auction_id', as: 'categories' });
@@ -74,5 +80,6 @@ module.exports = {
     Order,
     Notification,
     UserWatchlist,
-    AccountToken
+    AccountToken,
+    AuctionReport
 };

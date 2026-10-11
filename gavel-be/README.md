@@ -14,6 +14,7 @@ Backend cho dự án GAVEL (đấu giá trực tuyến): Express 5 + Sequelize 6
 - **Xác thực bằng cookie httpOnly**: access token 15 phút + refresh token 30 ngày, không lưu token trong `localStorage` nên XSS không lấy được phiên. Có cơ chế thu hồi phiên qua `users.token_version`.
 - **Khôi phục mật khẩu qua email**: email đăng ký/khôi phục phải xác minh; link đặt lại dùng token ngẫu nhiên một lần, lưu dạng hash và hết hạn sau 30 phút. SMTP cấu hình qua `SMTP_*`; tài khoản cũ có thể thêm email trong menu tài khoản.
 - **Quản trị**: Admin xem/tìm kiếm tài khoản, khóa/mở khóa, và quản lý phiên đấu giá. Gỡ sản phẩm sẽ ẩn khỏi API công khai, giữ lịch sử giá, hủy đơn chưa hoàn tất, giữ đơn đã hoàn tất và thông báo các bên liên quan; thao tác yêu cầu lý do và role `admin`.
+- **Báo cáo sản phẩm**: người dùng đã đăng nhập có thể báo cáo sản phẩm không phù hợp một lần cho mỗi phiên; Admin xem danh sách, gỡ sản phẩm hoặc đóng báo cáo trong khu vực quản trị.
 - **Phân quyền phòng chat**: mỗi người chỉ vào được phòng `conv_<id>` mình là thành viên.
 - **Chống lạm dụng socket**: rate limit riêng cho gửi tin nhắn, đọc tin nhắn và join phòng đấu giá.
 - **Upload có bảo mật**: yêu cầu xác thực + kiểm tra **magic bytes** thật của file.
@@ -84,6 +85,8 @@ Migration nằm trong `migrations/`, tên file `<timestamp>-<slug>.js`, mỗi c�
 - `PATCH /api/admin/users/:id/status` với `{ "isActive": false }` hoặc `{ "isActive": true }`: khóa/mở khóa tài khoản.
 - `GET /api/admin/auctions?page=1&limit=20&q=keyword&status=active`: tìm/lọc phiên đấu giá, bao gồm cả phiên đã gỡ khi dùng `status=removed` hoặc `status=all`.
 - `DELETE /api/admin/auctions/:id` với `{ "reason": "..." }`: gỡ phiên khỏi danh sách công khai, giữ lịch sử và xử lý đơn hàng chưa hoàn tất.
+- `GET /api/admin/reports?status=pending&page=1&limit=20`: xem báo cáo sản phẩm theo trạng thái.
+- `PATCH /api/admin/reports/:id/status` với `{ "status": "resolved" }` hoặc `{ "status": "dismissed" }`: đánh dấu đã xử lý hoặc đóng báo cáo.
 - Tài khoản đầu tiên cần được cấp role Admin thủ công bởi người có quyền truy cập DB, ví dụ: `UPDATE users SET role = 'admin' WHERE username = 'ten-dang-nhap';`. Không có API công khai để tự nâng quyền.
 
 ### Chạy test
@@ -173,6 +176,7 @@ Ngoài ra `script-src` vẫn cần `'unsafe-inline'` vì Next.js inject script n
 | PUT | `/api/auctions/:id` | Sửa phiên (khóa giá/thời gian khi có bid) | ✅ |
 | DELETE | `/api/auctions/:id` | Xóa phiên (chặn khi có bid) | ✅ |
 | POST | `/api/bids` | Đặt giá (transaction + row lock) | ✅ |
+| POST | `/api/auctions/:id/reports` | Báo cáo sản phẩm không phù hợp (mỗi tài khoản một lần/phiên) | ✅ |
 | GET | `/api/bids/auction/:auctionId?page&limit` | Lịch sử đặt giá (phân trang) | — |
 | POST | `/api/upload` | Upload ảnh/video (magic bytes check) | ✅ |
 | GET | `/api/users/:id` | Hồ sơ người dùng | — |

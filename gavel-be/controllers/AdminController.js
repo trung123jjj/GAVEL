@@ -1,5 +1,5 @@
 const { Op, literal } = require('sequelize');
-const { User, Auction, Bid, Category, Order, Notification, sequelize } = require('../models');
+const { User, Auction, Bid, Category, Order, Notification, AuctionReport, sequelize } = require('../models');
 
 const AdminController = {
     async listUsers(req, res, next) {
@@ -211,6 +211,10 @@ const AdminController = {
                 removed_by: Number(req.user.id),
                 removal_reason: reason
             }, { transaction });
+            await AuctionReport.update(
+                { status: 'resolved' },
+                { where: { auction_id: auctionId, status: 'pending' }, transaction }
+            );
 
             const recipientIds = new Set([
                 Number(auction.seller_id),
