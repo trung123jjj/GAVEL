@@ -1,94 +1,191 @@
-# GAVEL Frontend — Nền tảng đấu giá trực tuyến
+# GAVEL
 
-Frontend cho dự án GAVEL (đấu giá trực tuyến): Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS 4 + Socket.io-client.
+GAVEL là nền tảng đấu giá trực tuyến, gồm frontend Next.js và backend Express. Người dùng có thể đăng sản phẩm, tham gia đấu giá realtime, trao đổi với người mua/người bán và theo dõi giao dịch sau khi phiên kết thúc.
 
-## Tính năng
+> GAVEL hiện không xử lý hoặc xác minh thanh toán. Người mua và người bán tự thống nhất thanh toán bên ngoài hệ thống; trang Giao dịch hỗ trợ cập nhật các bước thanh toán, gửi hàng và nhận hàng.
 
-- **Đấu giá realtime**: trang chi tiết phiên join room `auction_<id>` qua WebSocket, cập nhật giá hiện tại, số lượt đặt giá, thời gian (kể cả khi bị kéo dài do anti-sniping) và trạng thái kết thúc **ngay lập tức** — không cần refresh. **Khách chưa đăng nhập cũng xem được giá realtime**, không chỉ người đã đăng nhập.
-- Trang chủ: banner, thống kê, tìm kiếm, lọc theo danh mục và sắp xếp.
-- Đặt giá (kiểm tra giá tối thiểu, bước giá, +5 bước).
-- Theo dõi (watchlist), hồ sơ người dùng, đánh giá có hình ảnh/video.
-- Chat realtime giữa người mua và người bán (báo rõ lỗi khi hết rate limit hoặc chưa đăng nhập).
-- Đăng bán / chỉnh sửa / xóa sản phẩm (upload nhiều ảnh/video).
-- Dark mode, responsive.
+## Tính năng chính
 
-## Phiên đăng nhập
+- Danh sách, tìm kiếm, lọc và xem chi tiết các phiên đấu giá.
+- Đấu giá realtime qua Socket.io; kiểm tra giá trong transaction với row lock để tránh cập nhật chồng khi có nhiều lượt đặt giá đồng thời.
+- Tự động kết thúc phiên và tạo giao dịch cho người thắng; đặt giá trong hai phút cuối có thể kéo dài phiên thêm hai phút.
+- Đăng bán, chỉnh sửa sản phẩm, tải nhiều ảnh và video.
+- Tài khoản, cookie đăng nhập httpOnly, xác minh email và khôi phục mật khẩu.
+- Danh sách theo dõi, chat realtime, đánh giá sau giao dịch và thông báo.
+- Trang quản trị để quản lý tài khoản, gỡ sản phẩm và xem xét báo cáo.
+- Nếu Redis không khả dụng, scheduler chuyển sang chế độ in-process để ứng dụng tiếp tục chạy.
 
-Token **không** lưu trong `localStorage`. Backend set cookie `httpOnly` và mọi request đi kèm `credentials: 'include'`, nên XSS không đọc được token.
+## Công nghệ
 
-- Access token sống 15 phút, refresh token 30 ngày (cookie ghim vào path `/api/auth`).
-- Khi gặp 401, `lib/api.ts` tự gọi `/auth/refresh` rồi thử lại request (nhiều request cùng lúc chỉ refresh một lần).
-- `GET /auth/me` là nguồn sự thật về việc đang đăng nhập. `localStorage.user` chỉ là cache để hiển thị, không dùng để xác thực.
-- `notifySessionChanged()` trong `lib/socket.ts` báo cho socket biết phiên đổi để tạo lại kết nối với danh tính mới (socket lấy danh tính từ cookie qua `withCredentials`).
+| Phần | Công nghệ |
+| --- | --- |
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
+| Backend | Node.js 22, Express 5, Sequelize 6 |
+| Database | MySQL 8 |
+| Realtime | Socket.io |
+| Background jobs | BullMQ và Redis (Redis tùy chọn; có fallback in-process) |
+| Kiểm thử backend | Jest, Supertest |
 
-## Cài đặt & chạy
+## Yêu cầu
 
-### Yêu cầu
-- Node.js ≥ 20
-- Backend GAVEL đang chạy ở `http://localhost:3001` (xem `gavel-be/README.md`)
+- Node.js 20 trở lên (khuyến nghị Node.js 22).
+- npm.
+- MySQL 8 đang chạy.
+- Redis 6 trở lên là tùy chọn cho BullMQ. Không có Redis thì scheduler dùng in-process; chế độ này không thay thế Redis bền vững khi chạy nhiều backend instance.
 
-### Bước cài đặt
+## Chạy local bằng PowerShell
 
-```bash
-cd gavel-fe
-npm install
-cp .env.example .env.local   # (nếu có) hoặc tạo .env.local:
+### 1. Cài dependency
+
+```powershell
+cd C:\GAVEL\gavel-be
+npm ci
+
+cd C:\GAVEL\gavel-fe
+npm ci
 ```
 
-File `.env.local`:
+### 2. Cấu hình backend
 
+Tạo database MySQL, sau đó tạo file cấu hình backend:
+
+```powershell
+Copy-Item C:\GAVEL\gavel-be\.env.example C:\GAVEL\gavel-be\.env
 ```
+
+Mở `gavel-be\.env` và cập nhật các giá trị phù hợp:
+
+| Biến | Mục đích |
+| --- | --- |
+| `DB_HOST`, `DB_PORT` | Địa chỉ và cổng MySQL; local thường là `localhost`, `3306` |
+| `DB_NAME` | Tên database ứng dụng |
+| `DB_USER`, `DB_PASSWORD` | Tài khoản MySQL |
+| `JWT_SECRET` | Chuỗi ngẫu nhiên tối thiểu 32 ký tự; không dùng giá trị mẫu |
+| `CLIENT_URL` | Origin frontend, local thường là `http://localhost:3000` |
+| `PUBLIC_API_URL` | Origin backend nhìn từ trình duyệt, local thường là `http://localhost:3001` |
+| `REDIS_URL` | URL Redis; nếu Redis không chạy, backend dùng in-process scheduler |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | SMTP cho xác minh email và khôi phục mật khẩu |
+
+Tạo secret ngẫu nhiên cho JWT bằng PowerShell:
+
+```powershell
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
+
+SMTP cần thông tin từ nhà cung cấp email. Port 587 thường dùng `SMTP_SECURE=false`; port 465 thường dùng `SMTP_SECURE=true`. Nếu chưa cấu hình SMTP, các thao tác gửi email sẽ không hoạt động, nhưng server vẫn có thể khởi động.
+
+### 3. Cấu hình frontend
+
+Tạo file `.env.local`:
+
+```powershell
+Copy-Item C:\GAVEL\gavel-fe\.env.example C:\GAVEL\gavel-fe\.env.local
+```
+
+Giá trị local mặc định:
+
+```dotenv
 NEXT_PUBLIC_API_URL=http://localhost:3001/api
 ```
 
-Chạy:
+### 4. Khởi động backend và frontend
 
-```bash
-npm run dev      # http://localhost:3000
-# hoặc build production:
-npm run build && npm start
+Mở hai cửa sổ PowerShell riêng.
+
+**Cửa sổ 1 — backend** (migration sẽ tự chạy khi khởi động):
+
+```powershell
+cd C:\GAVEL\gavel-be
+npm run dev
 ```
 
-## Cấu trúc
+**Cửa sổ 2 — frontend**:
 
-```
-gavel-fe/
-├── app/
-│   ├── page.tsx              # Trang chủ
-│   ├── auction/[id]/page.tsx # Chi tiết phiên + đấu giá realtime
-│   ├── auth/signin|signup    # Đăng nhập / đăng ký
-│   ├── chat/                 # Danh sách hội thoại + phòng chat
-│   ├── sell/                 # Đăng bán / sửa sản phẩm
-│   ├── user/[id]/page.tsx    # Hồ sơ người dùng + đánh giá
-│   └── watchlist/            # Danh sách theo dõi
-├── components/               # Header, Footer, AuctionCard/Grid, ChatSidebar...
-├── lib/
-│   ├── api.ts                # Client gọi REST API
-│   ├── socket.ts             # Socket.io client + helper realtime đấu giá
-│   └── favorites.ts          # Watchlist (localStorage)
-└── types/                    # TypeScript types (Auction, Chat, Review...)
+```powershell
+cd C:\GAVEL\gavel-fe
+npm run dev
 ```
 
-### Realtime đấu giá trên trang chi tiết
+Mở frontend tại `http://localhost:3000`. Backend API mặc định ở `http://localhost:3001/api`; kiểm tra backend tại `http://localhost:3001/health`.
 
-- `joinAuctionRoom(id)` — gửi `auction:join` để vào room `auction_<id>`.
-- `onBidNew(cb)` — lắng nghe `bid:new`: cập nhật `currentPrice`, `bidCount`, `endTime`, chèn bid mới lên đầu lịch sử, nhắc "đã cộng thêm 2 phút" khi bị kéo dài.
-- `onAuctionEnded(cb)` — lắng nghe `auction:ended`: chuyển phiên sang `ended`, hiển thị người thắng.
+## Migration, kiểm thử và lint
 
-> Socket không yêu cầu đăng nhập: khách xem vẫn nhận `bid:new` / `auction:ended`. Riêng các event chat cần đăng nhập, nếu không server trả lỗi qua `ack`.
+Chạy các lệnh backend trong `gavel-be`:
 
-## API client
-
-`lib/api.ts` gói gọn các lời gọi REST. Danh sách phiên hỗ trợ phân trang:
-
-```ts
-api.getAuctions({ page: 1, limit: 20, status: "active", q: "iphone", sort: "ending_soon" })
-// -> { items, total, page, limit, totalPages }
+```powershell
+npm run migrate
+npm run migrate:status
+npm test
 ```
 
-## Lint & TypeScript
+Chạy các lệnh frontend trong `gavel-fe`:
 
-```bash
+```powershell
 npm run lint
 npx tsc --noEmit
+npm run build
+```
+
+Backend tests sử dụng database riêng tên `gavel_db_test` và tạo/xóa schema kiểm thử. Không cấu hình `DB_NAME` của test trỏ vào database chứa dữ liệu thật.
+
+Kiểm tra SMTP đã cấu hình (không gửi email):
+
+```powershell
+cd C:\GAVEL\gavel-be
+npm run smtp:verify
+```
+
+## Tài khoản quản trị
+
+Đăng ký tài khoản bình thường, sau đó người có quyền truy cập database có thể cấp role admin:
+
+```sql
+UPDATE users SET role = 'admin' WHERE username = 'ten_dang_nhap';
+```
+
+Không có API công khai để tự nâng quyền. Chỉ cấp role admin cho tài khoản đáng tin cậy.
+
+## API và realtime
+
+Backend có API cho xác thực, sản phẩm, đặt giá, upload, thông báo, watchlist, chat, giao dịch, đánh giá và quản trị. Các endpoint quản trị nằm dưới `/api/admin` và yêu cầu tài khoản admin. Báo cáo sản phẩm yêu cầu đăng nhập; mỗi người dùng chỉ gửi một báo cáo cho một sản phẩm.
+
+Socket.io phát các sự kiện realtime như `bid:new`, `auction:ended` và sự kiện chat. Khách chưa đăng nhập có thể theo dõi cập nhật đấu giá công khai; chat yêu cầu xác thực. Chi tiết API và socket events nằm trong [tài liệu backend](gavel-be/README.md).
+
+Thông tin sử dụng frontend, phiên đăng nhập và luồng realtime nằm trong [tài liệu frontend](gavel-fe/README.md).
+
+## Docker Compose
+
+Repository có `docker-compose.yml`, hiện được cấu hình chủ yếu cho local development. Backend container cần file `gavel-be/.env`. Compose đọc `DB_NAME` và `DB_PASSWORD` từ file `.env` ở thư mục gốc để cấu hình MySQL; file `.env.example` ở gốc chỉ chứa biến frontend, không phải cấu hình database.
+
+Trước khi chạy Compose, hãy tạo `gavel-be/.env` từ `gavel-be/.env.example`, đồng thời tạo file `.env` ở gốc chứa `DB_NAME` và `DB_PASSWORD`. Đặt cùng database name/password trong hai nơi cấu hình. Compose hiện có giá trị mặc định `root` cho mật khẩu MySQL; chỉ dùng cho môi trường local dùng một mình, tuyệt đối không dùng mặc định này cho môi trường chia sẻ hoặc production.
+
+Lưu ý: `NEXT_PUBLIC_API_URL` được Next.js nhúng vào frontend khi build. Trong Compose hiện tại, biến này chỉ được đặt lúc chạy container chứ chưa được truyền vào bước build; vì vậy cấu hình Compose hiện tại dùng URL local mặc định `http://localhost:3001/api`, không phải cấu hình production cho domain khác. Muốn triển khai bằng Compose trên domain thật, cần truyền `NEXT_PUBLIC_API_URL` vào bước build của frontend trước khi build image và cấu hình CORS/cookie backend theo domain đó.
+
+Sau khi cấu hình local:
+
+```powershell
+cd C:\GAVEL
+docker compose up --build
+```
+
+Trong production, không giữ URL `localhost`: trình duyệt của người dùng phải truy cập được API URL đã được nhúng khi build frontend, đồng thời backend cần cho phép đúng origin frontend.
+
+## Chuẩn bị production
+
+- Dùng HTTPS để cookie phiên được bảo vệ; cấu hình đúng `CLIENT_URL`, `PUBLIC_API_URL` và `NEXT_PUBLIC_API_URL`.
+- Lưu JWT secret, mật khẩu database và SMTP credentials bằng secret manager của nền tảng deploy. Không commit `.env`.
+- Dùng SMTP đã xác minh domain/sender; chạy `npm run smtp:verify` và thử xác minh email/khôi phục mật khẩu trên staging. Email gửi lỗi hiện trả lỗi cho thao tác đó; ứng dụng chưa có hàng đợi tự gửi bù.
+- Cấu hình uptime monitor gọi `GET /health`. Endpoint trả 200 nếu database sẵn sàng, 503 nếu database không truy cập được; trường scheduler cho biết đang chạy BullMQ hay in-process.
+- Thu thập stdout/stderr và đặt cảnh báo cho HTTP 5xx, lỗi khởi động, SMTP outage và Redis fallback. Không log credentials hoặc nội dung email.
+- Sao lưu database MySQL định kỳ, mã hóa và lưu ngoài máy chủ ứng dụng; sao lưu thư mục `gavel-be/uploads` nếu ảnh vẫn được lưu trên filesystem. Kiểm thử khôi phục vào database riêng.
+- In-process scheduler phù hợp fallback trên một tiến trình; đánh giá Redis dùng chung, lưu trữ upload bền vững và xử lý nhiều instance trước khi scale ngang.
+
+## Cấu trúc repository
+
+```text
+GAVEL/
+├── gavel-be/       # Express API, Sequelize models/migrations, Socket.io, tests
+├── gavel-fe/       # Next.js frontend
+├── docker-compose.yml
+└── README.md       # Hướng dẫn tổng quan dự án
 ```
