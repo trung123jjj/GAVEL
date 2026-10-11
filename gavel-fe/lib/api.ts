@@ -17,6 +17,7 @@ function requiresLogin(path: string, method = 'GET') {
   if (path === '/bids' || path === '/upload' || path.startsWith('/chat/')) return true;
   if (/^\/users\/(avatar|notifications|watchlist)(\/|$)/.test(path)) return true;
   if (/^\/reviews\/user\/[^/]+$/.test(path)) return normalizedMethod === 'POST';
+  if (path === '/orders' || /^\/orders\/\d+\/status$/.test(path)) return true;
   if (path === '/auctions') return normalizedMethod === 'POST';
   if (/^\/auctions\/[^/]+$/.test(path)) return ['PUT', 'DELETE'].includes(normalizedMethod);
   return false;
@@ -56,7 +57,12 @@ async function refreshSession(): Promise<boolean> {
   return refreshInFlight;
 }
 
-async function request(path: string, options: RequestInit = {}, isRetry = false) {
+async function request(
+  path: string,
+  options: RequestInit = {},
+  isRetry = false,
+  promptOnLoginRequired = true
+) {
   const needsLogin = requiresLogin(path, options.method);
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers: Record<string, string> = { ...(options.headers as Record<string, string> || {}) };
@@ -71,9 +77,9 @@ async function request(path: string, options: RequestInit = {}, isRetry = false)
   // Access token ngắn hạn có thể hết hạn giữa chừng — thử làm mới rồi gọi lại.
   if (res.status === 401 && !isRetry && needsLogin) {
     const refreshed = await refreshSession();
-    if (refreshed) return request(path, options, true);
+    if (refreshed) return request(path, options, true, promptOnLoginRequired);
   }
-  if (res.status === 401 && needsLogin) {
+  if (res.status === 401 && needsLogin && promptOnLoginRequired) {
     notifyLoginRequired();
   }
 
@@ -161,11 +167,16 @@ export const api = {
   markNotificationsRead: () =>
     request('/users/notifications/read', { method: 'POST' }),
 
+  getOrders: () => request('/orders'),
+
+  updateOrderStatus: (id: number, status: 'paid' | 'shipped' | 'completed') =>
+    request(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+
   getWatchlist: () =>
     request('/users/watchlist') as Promise<{ auctionIds: number[] }>,
 
-  syncWatchlist: (auctionIds: string[]) =>
-    request('/users/watchlist/sync', { method: 'POST', body: JSON.stringify({ auctionIds }) }) as Promise<{ auctionIds: number[] }>,
+  syncWatchlist: (auctionIds: string[], promptOnLoginRequired = true) =>
+    request('/users/watchlist/sync', { method: 'POST', body: JSON.stringify({ auctionIds }) }, false, promptOnLoginRequired) as Promise<{ auctionIds: number[] }>,
 
   addWatchlistItem: (auctionId: string) =>
     request(`/users/watchlist/${encodeURIComponent(auctionId)}`, { method: 'POST' }),
