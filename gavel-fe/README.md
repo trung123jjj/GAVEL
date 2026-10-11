@@ -86,6 +86,8 @@ api.getAuctions({ page: 1, limit: 20, status: "active", q: "iphone", sort: "endi
 // -> { items, total, page, limit, totalPages }
 ```
 
+Watchlist chỉ tải các phiên đang theo dõi qua `GET /api/auctions?ids=1,2,3`, không tải toàn bộ danh sách đấu giá.
+
 ## Lint & TypeScript
 
 ```bash

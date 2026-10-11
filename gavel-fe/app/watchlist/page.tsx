@@ -130,7 +130,7 @@ export default function WatchlistPage() {
       }
 
       try {
-        const auctionData = await api.getAuctions({ limit: 500 }) as AuctionItem[] | { items: AuctionItem[] };
+        const auctionData = await api.getAuctions({ ids: favoriteIds.join(",") }) as AuctionItem[] | { items: AuctionItem[] };
         const data = Array.isArray(auctionData) ? auctionData : auctionData.items;
         const followed = data.filter((a) => favoriteIds.includes(String(a.id)));
 

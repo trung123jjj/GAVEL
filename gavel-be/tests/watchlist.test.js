@@ -63,4 +63,14 @@ describe('User watchlist', () => {
             .send({ auctionIds: ['not-an-id'] });
         expect(invalid.status).toBe(400);
     });
+
+    test('filters auctions by requested IDs and validates the IDs parameter', async () => {
+        const response = await request(app)
+            .get(`/api/auctions?ids=${auctionId},999999`);
+        expect(response.status).toBe(200);
+        expect(response.body.items.map((item) => Number(item.id))).toEqual([Number(auctionId)]);
+
+        const invalid = await request(app).get('/api/auctions?ids=1,invalid');
+        expect(invalid.status).toBe(400);
+    });
 });

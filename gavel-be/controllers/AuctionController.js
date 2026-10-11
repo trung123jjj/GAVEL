@@ -31,11 +31,29 @@ function mapAuction(a, now = new Date()) {
 const AuctionController = {
     async findAll(req, res, next) {
         try {
+            let ids = null;
+            if (req.query.ids !== undefined) {
+                if (typeof req.query.ids !== 'string' || req.query.ids.length === 0) {
+                    return res.status(400).json({ message: 'Danh sách mã phiên đấu giá không hợp lệ' });
+                }
+                const values = req.query.ids.split(',');
+                if (values.length > 500 || values.some((id) => !/^[1-9]\d*$/.test(id))) {
+                    return res.status(400).json({ message: 'Danh sách mã phiên đấu giá không hợp lệ' });
+                }
+                ids = [...new Set(values.map(Number))];
+                if (ids.some((id) => !Number.isSafeInteger(id))) {
+                    return res.status(400).json({ message: 'Danh sách mã phiên đấu giá không hợp lệ' });
+                }
+            }
+
             const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-            const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+            const limit = ids
+                ? Math.max(ids.length, 1)
+                : Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
             const offset = (page - 1) * limit;
 
             const where = {};
+            if (ids) where.id = { [Op.in]: ids };
             if (req.query.q) {
                 where[Op.or] = [
                     { title: { [Op.like]: `%${req.query.q}%` } },
