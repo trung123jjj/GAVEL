@@ -4,6 +4,17 @@ const { scheduleClose, enqueueOutbid } = require('../services/auctionScheduler')
 
 const ANTI_SNIPING_MS = 2 * 60 * 1000;
 
+function toCents(value) {
+    const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(String(value));
+    if (!match) return null;
+    const cents = Number(match[1]) * 100 + Number((match[2] || '').padEnd(2, '0'));
+    return Number.isSafeInteger(cents) ? cents : null;
+}
+
+function fromCents(cents) {
+    return (cents / 100).toFixed(2);
+}
+
 const BidController = {
     async create(req, res, next) {
         const transaction = await sequelize.transaction();
@@ -22,7 +33,7 @@ const BidController = {
             }
 
             const now = new Date();
-            const status = now < new Date(auction.start_time) ? 'pending' : now > new Date(auction.end_time) ? 'ended' : 'active';
+            const status = now < new Date(auction.start_time) ? 'pending' : now >= new Date(auction.end_time) ? 'ended' : 'active';
 
             if (status !== 'active') {
                 await transaction.rollback();
@@ -35,16 +46,25 @@ const BidController = {
                 return res.status(403).json({ message: 'Bạn không thể đặt giá sản phẩm của chính mình' });
             }
 
-            const minBid = Number(auction.current_price) + Number(auction.min_increment);
+            const currentPriceCents = toCents(auction.current_price);
+            const incrementCents = toCents(auction.min_increment);
+            const amountCents = toCents(amount);
+            if (currentPriceCents === null || incrementCents === null || amountCents === null) {
+                await transaction.rollback();
+                return res.status(400).json({ message: 'Giá đặt không hợp lệ' });
+            }
 
-            if (Number(amount) < minBid) {
+            const minBidCents = currentPriceCents + incrementCents;
+            const minBid = minBidCents / 100;
+
+            if (amountCents < minBidCents) {
                 await transaction.rollback();
                 return res.status(400).json({ message: `Giá phải lớn hơn ${minBid.toLocaleString('vi-VN')}đ` });
             }
 
-            const bid = await Bid.create({ auction_id, user_id, amount }, { transaction });
+            const bid = await Bid.create({ auction_id, user_id, amount: fromCents(amountCents) }, { transaction });
 
-            const updateFields = { current_price: amount };
+            const updateFields = { current_price: fromCents(amountCents) };
 
             // Anti-sniping: nếu còn < 2 phút thì cộng thêm 2 phút
             const remainingMs = new Date(auction.end_time).getTime() - now.getTime();
@@ -55,15 +75,17 @@ const BidController = {
             }
 
             await auction.update(updateFields, { transaction });
+            // Đếm khi vẫn đang giữ khóa phiên để response và sự kiện realtime
+            // phản ánh đúng thứ tự commit, không bị request kế tiếp làm lệch số lượt.
+            const bidCount = await Bid.count({ where: { auction_id }, transaction });
             await transaction.commit();
-
-            const bidCount = await Bid.count({ where: { auction_id } });
 
             // Broadcast realtime cho tất cả client đang xem phiên này
             const io = getIO();
             io?.to(`auction_${auction_id}`).emit('bid:new', {
                 auctionId: Number(auction_id),
-                currentPrice: Number(amount),
+                bidId: bid.id,
+                currentPrice: amountCents / 100,
                 bidCount,
                 endTime: extendedEndTime || auction.end_time,
                 timeExtended: !!extendedEndTime,
@@ -75,12 +97,12 @@ const BidController = {
             scheduleClose(auction_id, extendedEndTime || auction.end_time);
 
             // Thông báo cho những người bị vượt giá (qua message queue)
-            enqueueOutbid(auction_id, Number(user_id), Number(amount));
+            enqueueOutbid(auction_id, Number(user_id), amountCents / 100);
 
             return res.status(201).json({
                 message: 'Đặt giá thành công',
                 bidCount,
-                currentPrice: Number(amount),
+                currentPrice: amountCents / 100,
                 endTime: extendedEndTime || auction.end_time
             });
         } catch (err) {

@@ -3,14 +3,17 @@ const { request, app, resetDb, registerUser, auth, activeAuctionPayload } = requ
 describe('Auction & Bid', () => {
     let sellerToken;
     let buyerToken;
+    let secondBuyerToken;
     let auctionId;
 
     beforeAll(async () => {
         await resetDb();
         const seller = await registerUser('seller_1');
         const buyer = await registerUser('buyer_1');
+        const secondBuyer = await registerUser('buyer_2');
         sellerToken = seller.token;
         buyerToken = buyer.token;
+        secondBuyerToken = secondBuyer.token;
     });
 
     test('người bán tạo phiên đấu giá thành công', async () => {
@@ -50,6 +53,49 @@ describe('Auction & Bid', () => {
         const detail = await request(app).get(`/api/auctions/${auctionId}`);
         expect(detail.body.currentPrice).toBe(150000);
         expect(detail.body.bidCount).toBe(1);
+    });
+
+    test('hai lượt đặt đồng thời được tuần tự hóa, không ghi đè giá cao hơn', async () => {
+        const created = await request(app)
+            .post('/api/auctions')
+            .set(auth(sellerToken))
+            .send(activeAuctionPayload({ title: 'Phiên kiểm tra đặt giá đồng thời' }));
+        const concurrentAuctionId = created.body.id;
+
+        const results = await Promise.all([
+            request(app)
+                .post('/api/bids')
+                .set(auth(buyerToken))
+                .send({ auction_id: concurrentAuctionId, amount: 110000 }),
+            request(app)
+                .post('/api/bids')
+                .set(auth(secondBuyerToken))
+                .send({ auction_id: concurrentAuctionId, amount: 120000 })
+        ]);
+
+        const successful = results.filter((result) => result.status === 201);
+        const rejected = results.filter((result) => result.status === 400);
+        expect(successful.length).toBeGreaterThanOrEqual(1);
+        expect(successful.length + rejected.length).toBe(2);
+        expect(successful.map((result) => result.body.bidCount).sort((a, b) => a - b)).toEqual(
+            Array.from({ length: successful.length }, (_, index) => index + 1)
+        );
+
+        const detail = await request(app).get(`/api/auctions/${concurrentAuctionId}`);
+        const acceptedAmounts = successful.map((result) => Number(result.body.currentPrice));
+        expect(detail.body.currentPrice).toBe(Math.max(...acceptedAmounts));
+        expect(detail.body.bidCount).toBe(successful.length);
+        expect(detail.body.bids.map((bid) => bid.amount).sort((a, b) => b - a)).toEqual(
+            [...acceptedAmounts].sort((a, b) => b - a)
+        );
+    });
+
+    test('từ chối giá có hơn hai chữ số thập phân để tránh lệch với DECIMAL(15,2)', async () => {
+        const res = await request(app)
+            .post('/api/bids')
+            .set(auth(buyerToken))
+            .send({ auction_id: auctionId, amount: 200000.001 });
+        expect(res.status).toBe(400);
     });
 
     test('đặt giá lên phiên đã kết thúc bị từ chối', async () => {

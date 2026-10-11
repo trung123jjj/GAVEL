@@ -69,6 +69,7 @@ export function leaveAuctionRoom(auctionId: string | number) {
 
 export type BidNewPayload = {
   auctionId: number;
+  bidId: number;
   currentPrice: number;
   bidCount: number;
   endTime: string;

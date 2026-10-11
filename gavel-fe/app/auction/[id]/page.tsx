@@ -40,6 +40,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const itemRef = useRef(item);
+  const latestBidCountRef = useRef(0);
 
   useEffect(() => {
     itemRef.current = item;
@@ -49,15 +50,20 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
     params.then((p) => {
       api.getAuction(p.id)
         .then((data) => {
-          setItem(data);
-          setEndTime(data.endTime);
-          setTargetTime(data.status === 'pending' ? data.startTime : data.endTime);
-          setBidAmount(String(data.currentPrice + data.minIncrement));
-          setTimeLeft(getTimeLeft(data.status === 'pending' ? data.startTime : data.endTime));
-          void syncFavorites()
+          const hasNewerLiveBid = latestBidCountRef.current > data.bidCount;
+          latestBidCountRef.current = Math.max(latestBidCountRef.current, data.bidCount);
+          if (!hasNewerLiveBid) {
+            setItem(data);
+            setEndTime(data.endTime);
+            setTargetTime(data.status === 'pending' ? data.startTime : data.endTime);
+            setBidAmount(String(data.currentPrice + data.minIncrement));
+            setTimeLeft(getTimeLeft(data.status === 'pending' ? data.startTime : data.endTime));
+          }
+          void api.me()
+            .then(() => syncFavorites({ promptOnUnauthorized: false }))
             .then((favoriteIds) => setFavorited(favoriteIds.includes(String(p.id))))
             .catch((error: unknown) => {
-              if (error instanceof LoginRequiredError) return;
+              if ((error instanceof ApiError && error.status === 401) || error instanceof LoginRequiredError) return;
               console.error('watchlist sync error:', error);
               setFavoriteError(error instanceof Error ? error.message : 'Không thể đồng bộ danh sách theo dõi');
             });
@@ -82,22 +88,28 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
   }, [targetTime]);
 
   // Realtime: tham gia room auction_<id>, lắng nghe bid:new và auction:ended
+  const auctionIdForSocket = item?.id;
   useEffect(() => {
+    if (!auctionIdForSocket) return;
+
     let auctionId: string | null = null;
     let offBid = () => {};
     let offEnded = () => {};
 
     params.then((p) => {
+      if (p.id !== auctionIdForSocket) return;
       auctionId = p.id;
       joinAuctionRoom(p.id);
 
       offBid = onBidNew((payload) => {
         if (!auctionId || payload.auctionId !== Number(auctionId)) return;
+        if (payload.bidCount <= latestBidCountRef.current) return;
+        latestBidCountRef.current = payload.bidCount;
         setItem((prev) => {
           if (!prev) return prev;
           const exists = prev.bids.some((b) => b.amount === payload.currentPrice);
           const newBid = {
-            id: `live-${payload.createdAt || Date.now()}`,
+            id: String(payload.bidId),
             bidderName: payload.bidder.username,
             amount: payload.currentPrice,
             time: payload.createdAt,
@@ -145,7 +157,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
       offEnded();
       if (auctionId) leaveAuctionRoom(auctionId);
     };
-  }, [params]);
+  }, [auctionIdForSocket, params]);
 
   if (loading) {
     return (
