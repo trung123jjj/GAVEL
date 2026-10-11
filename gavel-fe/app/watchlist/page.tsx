@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
-import LoginRequiredModal from "@/components/login-required-modal";
 import { api } from "@/lib/api";
 import { getFavorites, LoginRequiredError, syncFavorites, updateFavorite } from "@/lib/favorites";
 import type { AuctionItem } from "@/types/auction";
@@ -284,13 +283,6 @@ export default function WatchlistPage() {
             </div>
           </div>
         </div>
-      )}
-
-      {requiresLogin && (
-        <LoginRequiredModal
-          message="Đăng nhập để xem và quản lý danh sách theo dõi đã đồng bộ với tài khoản."
-          onClose={() => setRequiresLogin(false)}
-        />
       )}
 
       <Footer />

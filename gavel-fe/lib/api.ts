@@ -8,6 +8,26 @@ export class ApiError extends Error {
   }
 }
 
+export const LOGIN_REQUIRED_EVENT = 'gavel:login-required';
+let loginRequiredPending = false;
+
+function requiresLogin(path: string) {
+  return !path.startsWith('/auth/') || path === '/auth/recovery-email';
+}
+
+function notifyLoginRequired() {
+  if (typeof window !== 'undefined') {
+    loginRequiredPending = true;
+    window.dispatchEvent(new CustomEvent(LOGIN_REQUIRED_EVENT));
+  }
+}
+
+export function consumeLoginRequiredPrompt() {
+  const pending = loginRequiredPending;
+  loginRequiredPending = false;
+  return pending;
+}
+
 // Phiên đăng nhập nằm trong cookie httpOnly do backend quản lý — không có token
 // nào được lưu trong localStorage, nên XSS không lấy được token.
 let refreshInFlight: Promise<boolean> | null = null;
@@ -30,10 +50,9 @@ async function refreshSession(): Promise<boolean> {
 }
 
 async function request(path: string, options: RequestInit = {}, isRetry = false) {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> || {})
-  };
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  const headers: Record<string, string> = { ...(options.headers as Record<string, string> || {}) };
+  if (!isFormData && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
 
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
@@ -42,9 +61,12 @@ async function request(path: string, options: RequestInit = {}, isRetry = false)
   });
 
   // Access token ngắn hạn có thể hết hạn giữa chừng — thử làm mới rồi gọi lại.
-  if (res.status === 401 && !isRetry && !path.startsWith('/auth/')) {
+  if (res.status === 401 && !isRetry && requiresLogin(path)) {
     const refreshed = await refreshSession();
     if (refreshed) return request(path, options, true);
+  }
+  if (res.status === 401 && requiresLogin(path)) {
+    notifyLoginRequired();
   }
 
   const text = await res.text();
@@ -159,17 +181,7 @@ export const api = {
     const fd = new FormData();
     files.forEach(f => fd.append('files', f));
 
-    // Không tự đặt Content-Type: trình duyệt phải tự gắn boundary.
-    // Trước đây dựng URL bằng `API_URL.replace('/api','')` rồi nối lại '/api',
-    // dễ vỡ nếu domain có chứa chuỗi "api".
-    const res = await fetch(`${API_URL}/upload`, {
-      method: 'POST',
-      credentials: 'include',
-      body: fd
-    });
-
-    const data = await res.json().catch(() => null);
-    if (!res.ok) throw new Error(data?.message || 'Upload failed');
+    const data = await request('/upload', { method: 'POST', body: fd });
     return data.urls as string[];
   }
 };

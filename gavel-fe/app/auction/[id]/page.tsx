@@ -9,7 +9,6 @@ import { joinAuctionRoom, leaveAuctionRoom, onBidNew, onAuctionEnded } from "@/l
 import type { AuctionItem } from "@/types/auction";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
-import LoginRequiredModal from "@/components/login-required-modal";
 
 function getTimeLeft(endTime: string) {
   const diff = new Date(endTime).getTime() - Date.now();
@@ -38,7 +37,6 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
   const [timeExtended, setTimeExtended] = useState(false);
   const [favorited, setFavorited] = useState(false);
   const [favoriteError, setFavoriteError] = useState("");
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const itemRef = useRef(item);
@@ -184,10 +182,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
       await updateFavorite(item.id, nextFavorite);
       setFavorited(nextFavorite);
     } catch (error: unknown) {
-      if (error instanceof LoginRequiredError) {
-        setShowLoginModal(true);
-        return;
-      }
+      if (error instanceof LoginRequiredError) return;
       console.error('watchlist update error:', error);
       setFavoriteError(error instanceof Error ? error.message : 'Không thể cập nhật danh sách theo dõi');
     }
@@ -225,7 +220,6 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
       if (err instanceof ApiError && err.status === 401) {
         setBidError("");
         setBidSuccess(false);
-        setShowLoginModal(true);
         return;
       }
       setBidError(err instanceof Error ? err.message : "Đặt giá thất bại");
@@ -542,13 +536,6 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
       </section>
 
       <div className="mt-auto">
-        {showLoginModal && (
-          <LoginRequiredModal
-            message="Bạn cần đăng nhập để thêm hoặc xóa sản phẩm khỏi danh sách theo dõi."
-            onClose={() => setShowLoginModal(false)}
-          />
-        )}
-
         <Footer />
       </div>
     </div>
