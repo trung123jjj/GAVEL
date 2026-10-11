@@ -53,7 +53,7 @@ export default function AuctionCard({ item }: { item: AuctionItem }) {
         </div>
         {item.bidCount > 0 && (
           <div className="absolute right-2 top-2 rounded-sm bg-black/60 px-2 py-0.5 text-[11px] text-white">
-            {item.bidCount} lượt_bid
+            {item.bidCount} lượt đặt giá
           </div>
         )}
       </div>
