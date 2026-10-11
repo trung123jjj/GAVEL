@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import LoginRequiredModal from "@/components/login-required-modal";
 import { api } from "@/lib/api";
 import { getFavorites, LoginRequiredError, syncFavorites, updateFavorite } from "@/lib/favorites";
 import type { AuctionItem } from "@/types/auction";
@@ -206,7 +207,6 @@ export default function WatchlistPage() {
     } catch (error) {
       if (error instanceof LoginRequiredError) {
         setRequiresLogin(true);
-        setWatchlistError(error.message);
         return;
       }
       console.error('watchlist remove error:', error);
@@ -233,11 +233,8 @@ export default function WatchlistPage() {
           </p>
         )}
         {requiresLogin ? (
-          <div className="rounded-sm bg-white py-16 text-center shadow-sm dark:bg-zinc-900">
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Vui lòng đăng nhập để xem và quản lý danh sách theo dõi.</p>
-            <Link href="/auth/signin" className="mt-4 inline-block rounded-sm bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover">
-              Đăng nhập
-            </Link>
+          <div className="rounded-sm bg-white py-16 text-center text-sm text-zinc-500 shadow-sm dark:bg-zinc-900 dark:text-zinc-400">
+            Danh sách theo dõi sẽ hiển thị sau khi đăng nhập.
           </div>
         ) : loading ? (
           <div className="rounded-sm bg-white py-16 text-center text-zinc-400 shadow-sm dark:bg-zinc-900">
@@ -287,6 +284,13 @@ export default function WatchlistPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {requiresLogin && (
+        <LoginRequiredModal
+          message="Đăng nhập để xem và quản lý danh sách theo dõi đã đồng bộ với tài khoản."
+          onClose={() => setRequiresLogin(false)}
+        />
       )}
 
       <Footer />

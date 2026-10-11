@@ -9,6 +9,7 @@ import { joinAuctionRoom, leaveAuctionRoom, onBidNew, onAuctionEnded } from "@/l
 import type { AuctionItem } from "@/types/auction";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import LoginRequiredModal from "@/components/login-required-modal";
 
 function getTimeLeft(endTime: string) {
   const diff = new Date(endTime).getTime() - Date.now();
@@ -37,6 +38,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
   const [timeExtended, setTimeExtended] = useState(false);
   const [favorited, setFavorited] = useState(false);
   const [favoriteError, setFavoriteError] = useState("");
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const itemRef = useRef(item);
@@ -183,7 +185,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
       setFavorited(nextFavorite);
     } catch (error: unknown) {
       if (error instanceof LoginRequiredError) {
-        setFavoriteError(error.message);
+        setShowLoginModal(true);
         return;
       }
       console.error('watchlist update error:', error);
@@ -309,14 +311,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
                   </span>
                 )}
               </button>
-              {favoriteError && (
-                <p role="alert" className="text-xs text-red-600">
-                  {favoriteError}
-                  {favoriteError.startsWith("Vui lòng đăng nhập") && (
-                    <> <Link href="/auth/signin" className="font-medium underline">Đăng nhập</Link></>
-                  )}
-                </p>
-              )}
+              {favoriteError && <p role="alert" className="text-xs text-red-600">{favoriteError}</p>}
             </div>
             <p className="mt-1.5 flex items-center gap-2 text-sm text-zinc-400">
               Đăng bởi
@@ -541,6 +536,13 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
       </section>
 
       <div className="mt-auto">
+        {showLoginModal && (
+          <LoginRequiredModal
+            message="Bạn cần đăng nhập để thêm hoặc xóa sản phẩm khỏi danh sách theo dõi."
+            onClose={() => setShowLoginModal(false)}
+          />
+        )}
+
         <Footer />
       </div>
     </div>
