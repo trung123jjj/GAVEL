@@ -1,4 +1,4 @@
-const { Auction, Category, User, Bid, Review, Notification, Order } = require('../models');
+const { Auction, Category, User, Bid, Review, Notification, Order, UserWatchlist } = require('../models');
 
 const UserController = {
     async updateAvatar(req, res, next) {
@@ -145,6 +145,88 @@ const UserController = {
             res.json({ message: 'Đã đánh dấu tất cả thông báo là đã đọc' });
         } catch (err) {
             next(err);
+        }
+    },
+
+    async getWatchlist(req, res, next) {
+        try {
+            const watchlist = await UserWatchlist.findAll({
+                where: { user_id: Number(req.user.id) },
+                attributes: ['auction_id'],
+                order: [['created_at', 'DESC']]
+            });
+            res.json({ auctionIds: watchlist.map((item) => item.auction_id) });
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    async syncWatchlist(req, res, next) {
+        try {
+            const { auctionIds } = req.body;
+            if (!Array.isArray(auctionIds) || auctionIds.length > 500) {
+                return res.status(400).json({ message: 'Danh sách theo dõi không hợp lệ' });
+            }
+
+            const ids = [...new Set(auctionIds.map(Number))];
+            if (ids.some((id) => !Number.isSafeInteger(id) || id <= 0)) {
+                return res.status(400).json({ message: 'Danh sách theo dõi không hợp lệ' });
+            }
+
+            const auctions = ids.length > 0
+                ? await Auction.findAll({ where: { id: ids }, attributes: ['id'], raw: true })
+                : [];
+            if (auctions.length > 0) {
+                await UserWatchlist.bulkCreate(
+                    auctions.map((auction) => ({ user_id: Number(req.user.id), auction_id: auction.id })),
+                    { ignoreDuplicates: true }
+                );
+            }
+
+            const watchlist = await UserWatchlist.findAll({
+                where: { user_id: Number(req.user.id) },
+                attributes: ['auction_id'],
+                order: [['created_at', 'DESC']]
+            });
+            return res.json({ auctionIds: watchlist.map((item) => item.auction_id) });
+        } catch (err) {
+            return next(err);
+        }
+    },
+
+    async addWatchlistItem(req, res, next) {
+        try {
+            const auctionId = Number(req.params.auctionId);
+            if (!Number.isSafeInteger(auctionId) || auctionId <= 0) {
+                return res.status(400).json({ message: 'Mã phiên đấu giá không hợp lệ' });
+            }
+            const auction = await Auction.findByPk(auctionId, { attributes: ['id'] });
+            if (!auction) {
+                return res.status(404).json({ message: 'Không tìm thấy phiên đấu giá' });
+            }
+
+            await UserWatchlist.findOrCreate({
+                where: { user_id: Number(req.user.id), auction_id: auctionId },
+                defaults: { user_id: Number(req.user.id), auction_id: auctionId }
+            });
+            return res.status(204).end();
+        } catch (err) {
+            return next(err);
+        }
+    },
+
+    async removeWatchlistItem(req, res, next) {
+        try {
+            const auctionId = Number(req.params.auctionId);
+            if (!Number.isSafeInteger(auctionId) || auctionId <= 0) {
+                return res.status(400).json({ message: 'Mã phiên đấu giá không hợp lệ' });
+            }
+            await UserWatchlist.destroy({
+                where: { user_id: Number(req.user.id), auction_id: auctionId }
+            });
+            return res.status(204).end();
+        } catch (err) {
+            return next(err);
         }
     }
 };

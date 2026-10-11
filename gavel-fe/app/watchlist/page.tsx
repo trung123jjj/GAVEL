@@ -6,7 +6,7 @@ import Image from "next/image";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { api } from "@/lib/api";
-import { getFavorites, toggleFavorite } from "@/lib/favorites";
+import { getFavorites, syncFavorites, updateFavorite } from "@/lib/favorites";
 import type { AuctionItem } from "@/types/auction";
 
 function formatPrice(n: number) {
@@ -108,12 +108,21 @@ export default function WatchlistPage() {
   const [won, setWon] = useState<AuctionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [removeTarget, setRemoveTarget] = useState<AuctionItem | null>(null);
+  const [watchlistError, setWatchlistError] = useState("");
 
   useEffect(() => {
     async function loadWatchlist() {
-      const favoriteIds = getFavorites();
-      const stored = localStorage.getItem("user");
-      const currentUser = stored ? JSON.parse(stored) : null;
+      let favoriteIds = getFavorites();
+      let currentUser: { username?: string } | null = null;
+
+      try {
+        favoriteIds = await syncFavorites();
+        const stored = localStorage.getItem("user");
+        currentUser = stored ? JSON.parse(stored) : null;
+      } catch (error) {
+        console.error('watchlist sync error:', error);
+        setWatchlistError(error instanceof Error ? error.message : 'Không thể đồng bộ danh sách theo dõi');
+      }
 
       if (favoriteIds.length === 0) {
         setLoading(false);
@@ -181,9 +190,15 @@ export default function WatchlistPage() {
     setRemoveTarget(item);
   }
 
-  function confirmRemove() {
+  async function confirmRemove() {
     if (!removeTarget) return;
-    toggleFavorite(removeTarget.id);
+    try {
+      await updateFavorite(removeTarget.id, false);
+      setWatchlistError("");
+    } catch (error) {
+      console.error('watchlist remove error:', error);
+      setWatchlistError(error instanceof Error ? error.message : 'Không thể cập nhật danh sách theo dõi');
+    }
     setUpcoming((prev) => prev.filter((a) => String(a.id) !== String(removeTarget.id)));
     setFollowing((prev) => prev.filter((a) => String(a.id) !== String(removeTarget.id)));
     setWon((prev) => prev.filter((a) => String(a.id) !== String(removeTarget.id)));
@@ -198,6 +213,11 @@ export default function WatchlistPage() {
         <h1 className="mb-4 text-lg font-semibold text-zinc-800 dark:text-zinc-200">
           Danh sách theo dõi ({total})
         </h1>
+        {watchlistError && (
+          <p role="alert" className="mb-4 rounded-sm bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
+            {watchlistError}
+          </p>
+        )}
 
         {loading ? (
           <div className="rounded-sm bg-white py-16 text-center text-zinc-400 shadow-sm dark:bg-zinc-900">

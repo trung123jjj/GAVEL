@@ -7,6 +7,7 @@ Backend cho dự án GAVEL (đấu giá trực tuyến): Express 5 + Sequelize 6
 - **Đấu giá realtime qua WebSocket (Socket.io)**: client join room `auction_<id>`, nhận sự kiện `bid:new` và `auction:ended` ngay khi có người đặt giá — **không cần đăng nhập** (khách chỉ cần xem giá).
 - **Chống race condition khi đặt giá**: toàn bộ luồng *đọc → kiểm tra → ghi* nằm trong một Sequelize transaction với **row lock (`SELECT ... FOR UPDATE`)** trên bản ghi auction.
 - **Message queue (BullMQ + Redis)**: job tự động **đóng phiên đấu giá đúng `end_time`**, tạo đơn hàng (order), gửi thông báo cho người thắng và người bị vượt giá. Nếu Redis không kết nối được khi khởi động hoặc bị mất khi server đang chạy, hệ thống chuyển sang bộ lập lịch in-process thay vì dừng server.
+- **Watchlist theo tài khoản**: danh sách theo dõi được lưu trong bảng `user_watchlist`, đồng bộ qua thiết bị sau khi đăng nhập; người chưa đăng nhập vẫn có thể dùng localStorage ở frontend.
 - **Chống sniping**: đặt giá trong 2 phút cuối tự cộng thêm 2 phút.
 - **Đơn hàng / người thắng cuộc**: bảng `orders` ghi nhận người thắng, giá chốt, trạng thái thanh toán/giao hàng.
 - **Đánh giá theo giao dịch thật**: chỉ người thắng phiên mới đánh giá được người bán, mỗi giao dịch một đánh giá.
@@ -96,7 +97,7 @@ gavel-be/
 ├── migrations/               # Migration schema (runner.js + <timestamp>-<slug>.js)
 ├── models/                   # Sequelize models + associations (index.js)
 │   ├── User, Auction, Bid, Category, AuctionCategory
-│   ├── Review, Order, Notification
+│   ├── Review, Order, Notification, UserWatchlist
 │   └── Conversation, Message
 ├── controllers/              # Xử lý logic nghiệp vụ
 ├── routes/                   # Định nghĩa endpoint + validation + rate limit

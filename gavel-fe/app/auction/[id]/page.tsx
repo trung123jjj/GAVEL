@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
-import { isFavorite, toggleFavorite } from "@/lib/favorites";
+import { isFavorite, syncFavorites, updateFavorite } from "@/lib/favorites";
 import { joinAuctionRoom, leaveAuctionRoom, onBidNew, onAuctionEnded } from "@/lib/socket";
 import type { AuctionItem } from "@/types/auction";
 import Header from "@/components/header";
@@ -36,6 +36,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
   const [bidSuccess, setBidSuccess] = useState(false);
   const [timeExtended, setTimeExtended] = useState(false);
   const [favorited, setFavorited] = useState(false);
+  const [favoriteError, setFavoriteError] = useState("");
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const itemRef = useRef(item);
@@ -54,6 +55,12 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
           setBidAmount(String(data.currentPrice + data.minIncrement));
           setTimeLeft(getTimeLeft(data.status === 'pending' ? data.startTime : data.endTime));
           setFavorited(isFavorite(p.id));
+          void syncFavorites()
+            .then((favoriteIds) => setFavorited(favoriteIds.includes(String(p.id))))
+            .catch((error: unknown) => {
+              console.error('watchlist sync error:', error);
+              setFavoriteError(error instanceof Error ? error.message : 'Không thể đồng bộ danh sách theo dõi');
+            });
         })
         .catch(console.error)
         .finally(() => setLoading(false));
@@ -167,6 +174,19 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
   const isActive = item.status === "active" && !timeLeft.expired;
   const minBid = item.currentPrice + item.minIncrement;
 
+  async function handleFavoriteToggle() {
+    if (!item) return;
+    const nextFavorite = !favorited;
+    setFavorited(nextFavorite);
+    setFavoriteError("");
+    try {
+      await updateFavorite(item.id, nextFavorite);
+    } catch (error: unknown) {
+      console.error('watchlist update error:', error);
+      setFavoriteError(error instanceof Error ? error.message : 'Không thể cập nhật danh sách theo dõi');
+    }
+  }
+
   async function handleBid() {
     if (!item) return;
     const val = Number(bidAmount);
@@ -259,10 +279,10 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
         <div className="flex flex-col gap-4 md:w-1/2">
           {/* Title & seller */}
           <div className="rounded-sm bg-white p-5 shadow-sm dark:bg-zinc-900">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h1 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">{item.title}</h1>
               <button
-                onClick={() => setFavorited(toggleFavorite(item.id))}
+                onClick={handleFavoriteToggle}
                 className={`shrink-0 rounded-sm border px-3 py-1.5 text-sm font-medium transition-colors ${
                   favorited
                     ? 'border-zinc-200 text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
@@ -285,6 +305,9 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
                   </span>
                 )}
               </button>
+              {favoriteError && (
+                <p role="alert" className="text-xs text-red-600">{favoriteError}</p>
+              )}
             </div>
             <p className="mt-1.5 flex items-center gap-2 text-sm text-zinc-400">
               Đăng bởi

@@ -9,6 +9,7 @@ const Conversation = require('./Conversation');
 const Message = require('./Message');
 const Order = require('./Order');
 const Notification = require('./Notification');
+const UserWatchlist = require('./UserWatchlist');
 
 // User → Auction (seller)
 User.hasMany(Auction, { foreignKey: 'seller_id', as: 'auctions' });
@@ -70,5 +71,6 @@ module.exports = {
     Conversation,
     Message,
     Order,
-    Notification
+    Notification,
+    UserWatchlist
 };

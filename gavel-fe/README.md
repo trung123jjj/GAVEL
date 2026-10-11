@@ -7,7 +7,7 @@ Frontend cho dự án GAVEL (đấu giá trực tuyến): Next.js 16 (App Router
 - **Đấu giá realtime**: trang chi tiết phiên join room `auction_<id>` qua WebSocket, cập nhật giá hiện tại, số lượt đặt giá, thời gian (kể cả khi bị kéo dài do anti-sniping) và trạng thái kết thúc **ngay lập tức** — không cần refresh. **Khách chưa đăng nhập cũng xem được giá realtime**, không chỉ người đã đăng nhập.
 - Trang chủ: banner, thống kê, tìm kiếm, lọc theo danh mục và sắp xếp.
 - Đặt giá (kiểm tra giá tối thiểu, bước giá, +5 bước).
-- Theo dõi (watchlist), hồ sơ người dùng, đánh giá có hình ảnh/video.
+- Theo dõi (watchlist): lưu trên tài khoản và đồng bộ giữa thiết bị; khách chưa đăng nhập vẫn dùng được localStorage.
 - Chat realtime giữa người mua và người bán (báo rõ lỗi khi hết rate limit hoặc chưa đăng nhập).
 - Đăng bán / chỉnh sửa / xóa sản phẩm (upload nhiều ảnh/video).
 - Dark mode, responsive.
@@ -65,7 +65,7 @@ gavel-fe/
 ├── lib/
 │   ├── api.ts                # Client gọi REST API
 │   ├── socket.ts             # Socket.io client + helper realtime đấu giá
-│   └── favorites.ts          # Watchlist (localStorage)
+│   └── favorites.ts          # Watchlist (localStorage + đồng bộ tài khoản)
 └── types/                    # TypeScript types (Auction, Chat, Review...)
 ```
 

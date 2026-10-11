@@ -1,12 +1,12 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 export const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
 
-export type AuthUser = {
-  id: number;
-  username: string;
-  avatar: string | null;
-  role?: string;
-};
+export class ApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
 
 // Phiên đăng nhập nằm trong cookie httpOnly do backend quản lý — không có token
 // nào được lưu trong localStorage, nên XSS không lấy được token.
@@ -60,7 +60,7 @@ async function request(path: string, options: RequestInit = {}, isRetry = false)
   }
 
   if (!res.ok) {
-    throw new Error(data?.message || 'Request failed');
+    throw new ApiError(data?.message || 'Request failed', res.status);
   }
 
   return data;
@@ -115,6 +115,18 @@ export const api = {
 
   markNotificationsRead: () =>
     request('/users/notifications/read', { method: 'POST' }),
+
+  getWatchlist: () =>
+    request('/users/watchlist') as Promise<{ auctionIds: number[] }>,
+
+  syncWatchlist: (auctionIds: string[]) =>
+    request('/users/watchlist/sync', { method: 'POST', body: JSON.stringify({ auctionIds }) }) as Promise<{ auctionIds: number[] }>,
+
+  addWatchlistItem: (auctionId: string) =>
+    request(`/users/watchlist/${encodeURIComponent(auctionId)}`, { method: 'POST' }),
+
+  removeWatchlistItem: (auctionId: string) =>
+    request(`/users/watchlist/${encodeURIComponent(auctionId)}`, { method: 'DELETE' }),
 
   getReviews: (userId: string) => request(`/reviews/user/${userId}`),
 
