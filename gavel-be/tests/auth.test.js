@@ -1,4 +1,8 @@
+jest.mock('../services/emailService', () => ({ sendMail: jest.fn().mockResolvedValue(undefined) }));
+
+const { sendMail } = require('../services/emailService');
 const { request, app, resetDb, registerUser, accessTokenFrom, auth } = require('./helpers');
+const { User } = require('../models');
 
 function cookieNamed(res, name) {
     const cookies = res.headers['set-cookie'] || [];
@@ -11,7 +15,7 @@ describe('Auth', () => {
     test('đăng ký thành công và thiết lập cookie httpOnly thay vì trả token', async () => {
         const res = await request(app)
             .post('/api/auth/register')
-            .send({ username: 'user_auth_1', password: 'secret123' });
+            .send({ username: 'user_auth_1', password: 'secret123', email: 'user_auth_1@example.test' });
 
         expect(res.status).toBe(201);
         expect(res.body.user.username).toBe('user_auth_1');
@@ -33,7 +37,7 @@ describe('Auth', () => {
     test('đăng ký username trùng lặp bị từ chối', async () => {
         const res = await request(app)
             .post('/api/auth/register')
-            .send({ username: 'user_auth_1', password: 'secret123' });
+            .send({ username: 'user_auth_1', password: 'secret123', email: 'user_auth_1@example.test' });
         expect(res.status).toBe(400);
     });
 
@@ -57,7 +61,7 @@ describe('Auth', () => {
     test('validate: username/password quá ngắn bị từ chối', async () => {
         const res = await request(app)
             .post('/api/auth/register')
-            .send({ username: 'ab', password: '123' });
+            .send({ username: 'ab', password: '123', email: 'bad' });
         expect(res.status).toBe(400);
     });
 
@@ -127,5 +131,63 @@ describe('Auth', () => {
         const { token, user } = await registerUser('user_auth_helper');
         expect(token).toBeTruthy();
         expect(user.username).toBe('user_auth_helper');
+    });
+
+    test('xác minh email rồi đặt lại mật khẩu bằng token dùng một lần', async () => {
+        await request(app)
+            .post('/api/auth/register')
+            .send({ username: 'recovery_user', password: 'secret123', email: 'recovery@example.test' });
+        const verificationToken = /token=([a-f0-9]{64})/.exec(sendMail.mock.calls.at(-1)[0].text)[1];
+
+        const verification = await request(app)
+            .post('/api/auth/email/verify')
+            .send({ token: verificationToken });
+        expect(verification.status).toBe(200);
+
+        const forgot = await request(app)
+            .post('/api/auth/password/forgot')
+            .send({ email: 'recovery@example.test' });
+        expect(forgot.status).toBe(200);
+        const resetToken = /token=([a-f0-9]{64})/.exec(sendMail.mock.calls.at(-1)[0].text)[1];
+
+        const reset = await request(app)
+            .post('/api/auth/password/reset')
+            .send({ token: resetToken, password: 'newsecret123' });
+        expect(reset.status).toBe(200);
+
+        const oldPassword = await request(app)
+            .post('/api/auth/login')
+            .send({ username: 'recovery_user', password: 'secret123' });
+        expect(oldPassword.status).toBe(401);
+
+        const newPassword = await request(app)
+            .post('/api/auth/login')
+            .send({ username: 'recovery_user', password: 'newsecret123' });
+        expect(newPassword.status).toBe(200);
+
+        const replay = await request(app)
+            .post('/api/auth/password/reset')
+            .send({ token: resetToken, password: 'anothersecret123' });
+        expect(replay.status).toBe(400);
+    });
+
+    test('tài khoản cũ có thể gắn email khôi phục sau khi xác minh mật khẩu hiện tại', async () => {
+        const { token, user } = await registerUser('legacy_recovery');
+        await User.update({ email: null, email_verified_at: null }, { where: { id: user.id } });
+
+        const addEmail = await request(app)
+            .post('/api/auth/recovery-email')
+            .set(auth(token))
+            .send({ email: 'legacy@example.test', password: 'password123' });
+        expect(addEmail.status).toBe(200);
+        const verificationToken = /token=([a-f0-9]{64})/.exec(sendMail.mock.calls.at(-1)[0].text)[1];
+
+        const verify = await request(app)
+            .post('/api/auth/email/verify')
+            .send({ token: verificationToken });
+        expect(verify.status).toBe(200);
+        const updatedUser = await User.findByPk(user.id);
+        expect(updatedUser.email).toBe('legacy@example.test');
+        expect(updatedUser.email_verified_at).toBeTruthy();
     });
 });

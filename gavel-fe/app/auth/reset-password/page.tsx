@@ -1,0 +1,59 @@
+"use client";
+
+import Link from "next/link";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { api } from "@/lib/api";
+
+function ResetPasswordForm() {
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token") || "";
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+    if (!token) return setError("Liên kết đặt lại mật khẩu không hợp lệ");
+    if (password.length < 6) return setError("Mật khẩu phải có ít nhất 6 ký tự");
+    if (password !== confirmPassword) return setError("Mật khẩu xác nhận không khớp");
+
+    setLoading(true);
+    try {
+      const result = await api.resetPassword(token, password);
+      setMessage(result.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Không thể đặt lại mật khẩu");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-zinc-100 px-4 dark:bg-zinc-950">
+      <form onSubmit={submit} className="w-full max-w-md rounded-sm bg-white p-6 shadow-sm dark:bg-zinc-900">
+        <h1 className="text-xl font-semibold text-zinc-800 dark:text-zinc-100">Đặt lại mật khẩu</h1>
+        <label className="mt-5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Mật khẩu mới</label>
+        <input type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} className="mt-1 w-full rounded-sm border border-zinc-200 px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100" />
+        <label className="mt-4 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Nhập lại mật khẩu</label>
+        <input type="password" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="mt-1 w-full rounded-sm border border-zinc-200 px-3 py-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100" />
+        {error && <p role="alert" className="mt-3 text-sm text-red-600">{error}</p>}
+        {message && <p role="status" className="mt-3 text-sm text-green-700 dark:text-green-400">{message}</p>}
+        {!message && (
+          <button type="submit" disabled={loading} className="mt-5 w-full rounded-sm bg-primary py-2.5 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50">
+            {loading ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
+          </button>
+        )}
+        <Link href="/auth/signin" className="mt-4 block text-center text-sm text-primary hover:underline">Quay lại đăng nhập</Link>
+      </form>
+    </main>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return <Suspense><ResetPasswordForm /></Suspense>;
+}

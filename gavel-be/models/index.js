@@ -10,6 +10,7 @@ const Message = require('./Message');
 const Order = require('./Order');
 const Notification = require('./Notification');
 const UserWatchlist = require('./UserWatchlist');
+const AccountToken = require('./AccountToken');
 
 // User → Auction (seller)
 User.hasMany(Auction, { foreignKey: 'seller_id', as: 'auctions' });
@@ -72,5 +73,6 @@ module.exports = {
     Message,
     Order,
     Notification,
-    UserWatchlist
+    UserWatchlist,
+    AccountToken
 };

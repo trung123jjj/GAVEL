@@ -9,6 +9,7 @@ export default function SignUpPage() {
   const router = useRouter();
   const [form, setForm] = useState({
     username: "",
+    email: "",
     password: "",
     confirmPassword: "",
   });
@@ -20,6 +21,8 @@ export default function SignUpPage() {
     const errs: Record<string, string> = {};
     if (!form.username.trim()) errs.username = "Vui lòng nhập tên đăng nhập";
     else if (form.username.trim().length < 3) errs.username = "Tên đăng nhập phải có ít nhất 3 ký tự";
+    if (!form.email.trim()) errs.email = "Vui lòng nhập email";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errs.email = "Email không hợp lệ";
     if (!form.password) errs.password = "Vui lòng nhập mật khẩu";
     else if (form.password.length < 6) errs.password = "Mật khẩu phải có ít nhất 6 ký tự";
     if (!form.confirmPassword) errs.confirmPassword = "Vui lòng xác nhận mật khẩu";
@@ -38,8 +41,9 @@ export default function SignUpPage() {
       await api.register({
         username: form.username,
         password: form.password,
+        email: form.email.trim(),
       });
-      router.push("/auth/signin?registered=1");
+      router.push("/auth/signin?registered=1&verifyEmail=1");
     } catch (err: unknown) {
       setErrors({ submit: err instanceof Error ? err.message : "Đăng ký thất bại" });
     } finally {
@@ -89,6 +93,25 @@ export default function SignUpPage() {
                   } dark:bg-zinc-800 dark:text-zinc-100`}
                 />
                 {errors.username && <p className="mt-1 text-xs text-red-500">{errors.username}</p>}
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  Email khôi phục
+                </label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => handleChange("email", e.target.value)}
+                  placeholder="name@example.com"
+                  autoComplete="email"
+                  className={`w-full rounded-sm border px-3 py-2.5 text-sm outline-none transition-colors ${
+                    errors.email
+                      ? "border-red-500 focus:border-red-500"
+                      : "border-zinc-200 focus:border-primary dark:border-zinc-700"
+                  } dark:bg-zinc-800 dark:text-zinc-100`}
+                />
+                {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
               </div>
 
               {/* Mật khẩu */}

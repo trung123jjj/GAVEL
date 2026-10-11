@@ -72,8 +72,23 @@ export const api = {
   login: (username: string, password: string) =>
     request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
 
-  register: (data: { username: string; password: string }) =>
+  register: (data: { username: string; password: string; email: string }) =>
     request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+
+  requestPasswordReset: (email: string) =>
+    request('/auth/password/forgot', { method: 'POST', body: JSON.stringify({ email }) }),
+
+  resetPassword: (token: string, password: string) =>
+    request('/auth/password/reset', { method: 'POST', body: JSON.stringify({ token, password }) }),
+
+  verifyEmail: (token: string) =>
+    request('/auth/email/verify', { method: 'POST', body: JSON.stringify({ token }) }),
+
+  resendEmailVerification: (email: string) =>
+    request('/auth/email/verification/resend', { method: 'POST', body: JSON.stringify({ email }) }),
+
+  requestRecoveryEmail: (email: string, password: string) =>
+    request('/auth/recovery-email', { method: 'POST', body: JSON.stringify({ email, password }) }),
 
   logout: () => request('/auth/logout', { method: 'POST' }),
 

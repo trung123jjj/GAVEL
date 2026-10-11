@@ -10,6 +10,7 @@ function SignInContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered") === "1";
+  const verifyEmail = searchParams.get("verifyEmail") === "1";
   const [form, setForm] = useState({ username: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
@@ -71,7 +72,9 @@ function SignInContent() {
             <form onSubmit={handleSubmit} className="space-y-4 px-6 py-5">
               {registered && (
                 <div className="rounded-sm bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">
-                  Đăng ký thành công! Vui lòng đăng nhập.
+                  {verifyEmail
+                    ? "Đăng ký thành công. Hãy mở email để xác minh địa chỉ, rồi bạn có thể dùng email để khôi phục mật khẩu."
+                    : "Đăng ký thành công! Vui lòng đăng nhập."}
                 </div>
               )}
               {/* Tên đăng nhập */}
@@ -132,9 +135,9 @@ function SignInContent() {
 
               {/* Quên mật khẩu */}
               <div className="flex items-center justify-end">
-                <a href="#" className="text-sm text-primary hover:underline">
+                <Link href="/auth/forgot-password" className="text-sm text-primary hover:underline">
                   Quên mật khẩu?
-                </a>
+                </Link>
               </div>
 
               {/* Submit */}

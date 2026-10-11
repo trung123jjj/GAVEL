@@ -21,7 +21,7 @@ function accessTokenFrom(res) {
 async function registerUser(username, password = 'password123') {
     const res = await request(app)
         .post('/api/auth/register')
-        .send({ username, password });
+        .send({ username, password, email: `${username}@example.test` });
     if (res.status !== 201) {
         throw new Error(`register failed (${res.status}): ${JSON.stringify(res.body)}`);
     }

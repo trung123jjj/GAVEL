@@ -27,4 +27,12 @@ const refreshLimiter = rateLimit({
     message: { message: 'Quá nhiều yêu cầu làm mới phiên. Vui lòng thử lại sau.' }
 });
 
-module.exports = { authLimiter, bidLimiter, refreshLimiter };
+const recoveryLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Quá nhiều yêu cầu khôi phục tài khoản. Vui lòng thử lại sau 15 phút.' }
+});
+
+module.exports = { authLimiter, bidLimiter, refreshLimiter, recoveryLimiter };

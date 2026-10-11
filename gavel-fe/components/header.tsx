@@ -144,6 +144,13 @@ export default function Header() {
                         Danh sách theo dõi
                       </Link>
                       <Link
+                        href="/auth/recovery-email"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                      >
+                        Email khôi phục
+                      </Link>
+                      <Link
                         href="/chat"
                         onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-700"

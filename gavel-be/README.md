@@ -12,6 +12,7 @@ Backend cho dự án GAVEL (đấu giá trực tuyến): Express 5 + Sequelize 6
 - **Đơn hàng / người thắng cuộc**: bảng `orders` ghi nhận người thắng, giá chốt, trạng thái thanh toán/giao hàng.
 - **Đánh giá theo giao dịch thật**: chỉ người thắng phiên mới đánh giá được người bán, mỗi giao dịch một đánh giá.
 - **Xác thực bằng cookie httpOnly**: access token 15 phút + refresh token 30 ngày, không lưu token trong `localStorage` nên XSS không lấy được phiên. Có cơ chế thu hồi phiên qua `users.token_version`.
+- **Khôi phục mật khẩu qua email**: email đăng ký/khôi phục phải xác minh; link đặt lại dùng token ngẫu nhiên một lần, lưu dạng hash và hết hạn sau 30 phút. SMTP cấu hình qua `SMTP_*`; tài khoản cũ có thể thêm email trong menu tài khoản.
 - **Phân quyền phòng chat**: mỗi người chỉ vào được phòng `conv_<id>` mình là thành viên.
 - **Chống lạm dụng socket**: rate limit riêng cho gửi tin nhắn, đọc tin nhắn và join phòng đấu giá.
 - **Upload có bảo mật**: yêu cầu xác thực + kiểm tra **magic bytes** thật của file.
@@ -57,6 +58,8 @@ Server mặc định chạy ở `http://localhost:3001`.
 
 > Nếu thiếu biến môi trường bắt buộc hoặc `JWT_SECRET` còn là giá trị dễ đoán (ngắn hơn 32 ký tự, hoặc khớp mẫu `gavel_secret_key*` / `*change_me*` / `secret*`), server **từ chối khởi động** (fail-fast).
 
+Để bật xác minh email và khôi phục mật khẩu, điền `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` trong `.env`. `CLIENT_URL` phải là URL frontend để tạo link email. Không commit thông tin SMTP.
+
 Sinh `JWT_SECRET` an toàn:
 
 ```bash
@@ -96,7 +99,7 @@ gavel-be/
 │   └── ...
 ├── migrations/               # Migration schema (runner.js + <timestamp>-<slug>.js)
 ├── models/                   # Sequelize models + associations (index.js)
-│   ├── User, Auction, Bid, Category, AuctionCategory
+│   ├── User, AccountToken, Auction, Bid, Category, AuctionCategory
 │   ├── Review, Order, Notification, UserWatchlist
 │   └── Conversation, Message
 ├── controllers/              # Xử lý logic nghiệp vụ

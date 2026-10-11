@@ -41,5 +41,11 @@ module.exports = {
     // Origin backend nhìn từ phía trình duyệt — dùng để dựng CSP (img/connect-src).
     PUBLIC_API_URL: process.env.PUBLIC_API_URL || 'http://localhost:3001',
     REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
+    SMTP_HOST: process.env.SMTP_HOST,
+    SMTP_PORT: Number(process.env.SMTP_PORT || 587),
+    SMTP_SECURE: process.env.SMTP_SECURE === 'true',
+    SMTP_USER: process.env.SMTP_USER,
+    SMTP_PASSWORD: process.env.SMTP_PASSWORD,
+    SMTP_FROM: process.env.SMTP_FROM,
     NODE_ENV: process.env.NODE_ENV || 'development'
 };
