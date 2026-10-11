@@ -41,7 +41,7 @@ function getCachedUserId(): string | null {
   }
 }
 
-export async function syncFavorites(): Promise<string[]> {
+export async function syncFavorites(options: { promptOnUnauthorized?: boolean } = {}): Promise<string[]> {
   const userId = getCachedUserId();
   const previousOwner = localStorage.getItem(OWNER_KEY);
   let localFavorites = getFavorites();
@@ -52,7 +52,7 @@ export async function syncFavorites(): Promise<string[]> {
 
   let auctionIds: number[];
   try {
-    ({ auctionIds } = await api.syncWatchlist(localFavorites));
+    ({ auctionIds } = await api.syncWatchlist(localFavorites, options.promptOnUnauthorized));
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) throw new LoginRequiredError();
     throw error;
