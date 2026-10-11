@@ -16,7 +16,7 @@ const navLinks = [
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<{ id: string; username: string; avatar?: string | null } | null>(null);
+  const [user, setUser] = useState<{ id: string; username: string; avatar?: string | null; role?: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -150,6 +150,15 @@ export default function Header() {
                       >
                         Giao dịch đấu giá
                       </Link>
+                      {user.role === "admin" && (
+                        <Link
+                          href="/admin/users"
+                          onClick={() => setShowUserMenu(false)}
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 transition-colors hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                        >
+                          Quản trị tài khoản
+                        </Link>
+                      )}
                       <Link
                         href="/auth/recovery-email"
                         onClick={() => setShowUserMenu(false)}
@@ -299,6 +308,18 @@ export default function Header() {
               }`}
             >
               Thông báo
+            </Link>
+          )}
+          {user?.role === "admin" && (
+            <Link
+              href="/admin/users"
+              className={`shrink-0 whitespace-nowrap rounded-sm px-4 py-1.5 text-[13px] font-medium transition-colors ${
+                pathname.startsWith("/admin")
+                  ? "bg-white/20 text-white"
+                  : "text-white/80 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              Quản trị
             </Link>
           )}
         </div>
