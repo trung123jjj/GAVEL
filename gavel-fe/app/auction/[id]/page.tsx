@@ -400,7 +400,7 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
               <p className="text-lg font-bold text-zinc-400">Đấu giá đã kết thúc</p>
             ) : (
               <>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   {[
                     { val: timeLeft.days, label: "Ngày" },
                     { val: timeLeft.hours, label: "Giờ" },
@@ -495,20 +495,20 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
                     onChange={(e) => { setBidAmount(e.target.value); setBidError(""); setBidSuccess(false); }}
                     min={minBid}
                     step={item.minIncrement}
-                    className="w-full rounded-sm border border-zinc-200 py-2.5 pl-7 pr-3 text-sm font-medium outline-none focus:border-primary dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                    className="min-w-0 w-full rounded-sm border border-zinc-200 py-2.5 pl-7 pr-3 text-sm font-medium outline-none focus:border-primary dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
                   />
                 </div>
                 <button
                   onClick={handleBid}
-                  className="shrink-0 rounded-sm bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-600"
+                  className="w-full shrink-0 rounded-sm bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-sky-600 sm:w-auto"
                 >
                   Đặt giá
                 </button>
               </div>
-              <div className="mt-2 flex items-center gap-3">
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => { setBidAmount(String(minBid)); setBidError(""); setBidSuccess(false); }}
-                  className="rounded-sm border border-zinc-200 px-3 py-1 text-[12px] text-zinc-500 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  className="rounded-sm border border-zinc-200 px-2.5 py-1 text-left text-[12px] text-zinc-500 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800 sm:px-3"
                 >
                   Tối thiểu: {formatPrice(minBid)}đ
                 </button>
@@ -593,13 +593,13 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
 
       {showReportModal && (
         <div
-          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 p-4"
+          className="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto bg-black/60 p-4"
           onClick={() => setShowReportModal(false)}
         >
           <form
             onSubmit={handleReportSubmit}
             onClick={(event) => event.stopPropagation()}
-            className="w-full max-w-lg rounded-sm bg-white p-6 shadow-xl dark:bg-zinc-900"
+            className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-sm bg-white p-4 shadow-xl dark:bg-zinc-900 sm:p-6"
           >
             <h2 className="text-lg font-bold text-zinc-800 dark:text-zinc-100">Báo cáo sản phẩm</h2>
             <p className="mt-1 text-sm text-zinc-500">Báo cáo sẽ được gửi đến quản trị viên để xem xét.</p>
@@ -627,9 +627,9 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
               className="mt-1 w-full resize-y rounded-sm border border-zinc-300 p-3 text-sm outline-none focus:border-primary dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
             />
             {reportError && <p role="alert" className="mt-2 text-sm text-red-600">{reportError}</p>}
-            <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setShowReportModal(false)} className="rounded-sm border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700 dark:text-zinc-200">Hủy</button>
-              <button type="submit" disabled={reportSubmitting} className="rounded-sm bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setShowReportModal(false)} className="w-full rounded-sm border border-zinc-300 px-4 py-2 text-sm dark:border-zinc-700 dark:text-zinc-200 sm:w-auto">Hủy</button>
+              <button type="submit" disabled={reportSubmitting} className="w-full rounded-sm bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 sm:w-auto">
                 {reportSubmitting ? "Đang gửi..." : "Gửi báo cáo"}
               </button>
             </div>

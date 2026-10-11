@@ -223,6 +223,7 @@ function ReviewForm({ profileId, profileName, onSubmitted }: { profileId: string
           <div className="flex flex-wrap gap-2">
             {media.map((m, i) => {
               const src = mediaSrc(m.url);
+              if (!src) return null;
               return (
                 <div key={i} className="relative h-20 w-20 overflow-hidden rounded-sm bg-zinc-100 dark:bg-zinc-800">
                   {m.type === "image" ? (

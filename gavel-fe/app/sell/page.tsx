@@ -305,12 +305,12 @@ export default function SellPage() {
 
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">
         <div className="rounded-sm bg-white shadow-sm dark:bg-zinc-900">
-          <div className="border-b border-zinc-100 px-6 py-4 dark:border-zinc-800">
+          <div className="border-b border-zinc-100 px-4 py-4 dark:border-zinc-800 sm:px-6">
             <h1 className="text-lg font-bold text-zinc-800 dark:text-zinc-100">{editId ? "Chỉnh sửa sản phẩm" : "Đăng sản phẩm đấu giá"}</h1>
             <p className="mt-1 text-sm text-zinc-400">{editId ? "Cập nhật thông tin sản phẩm của bạn" : "Điền thông tin sản phẩm để bắt đầu đấu giá"}</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
+          <form onSubmit={handleSubmit} className="space-y-5 px-4 py-5 sm:px-6">
             {/* Tên sản phẩm */}
             <div>
               <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -453,7 +453,7 @@ export default function SellPage() {
             </div>
 
             {/* Giá & bước giá */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   Giá khởi điểm (đ) <span className="text-red-500">*</span>
@@ -493,7 +493,7 @@ export default function SellPage() {
               <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 Thời gian đấu giá
               </label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-[12px] text-zinc-400">
                     Bắt đầu <span className="text-red-500">*</span>
@@ -556,7 +556,7 @@ export default function SellPage() {
 
               {/* Preview */}
               {(existingImages.length > 0 || previews.length > 0) && (
-                <div className="mt-3 grid grid-cols-5 gap-2">
+                <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
                   {existingImages.map((src, i) => (
                     <div key={`existing-${i}`} className="group relative aspect-square overflow-hidden rounded-sm border border-zinc-200 dark:border-zinc-700">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -564,7 +564,8 @@ export default function SellPage() {
                       <button
                         type="button"
                         onClick={() => setExistingImages((prev) => prev.filter((_, idx) => idx !== i))}
-                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                        aria-label={`Xóa ảnh ${i + 1}`}
+                        className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                       >
                         <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -584,7 +585,8 @@ export default function SellPage() {
                       <button
                         type="button"
                         onClick={() => removeImage(i)}
-                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                        aria-label={`Xóa ảnh ${existingImages.length + i + 1}`}
+                        className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                       >
                         <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
