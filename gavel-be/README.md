@@ -62,6 +62,8 @@ Server mặc định chạy ở `http://localhost:3001`.
 
 Để bật xác minh email và khôi phục mật khẩu, điền `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` trong `.env`. `CLIENT_URL` phải là URL frontend để tạo link email. Không commit thông tin SMTP.
 
+Với TiDB Cloud Public Endpoint, dùng endpoint/port/user/password do TiDB cấp, tạo database ứng dụng riêng thay vì dùng database hệ thống `sys`, rồi đặt tên database đó vào `DB_NAME` và đặt `DB_SSL=true`. Sequelize sẽ dùng TLS tối thiểu 1.2 và xác minh chứng chỉ. Nếu Node.js báo lỗi xác minh chứng chỉ, tải CA root được TiDB hướng dẫn và dán toàn bộ nội dung PEM vào `DB_SSL_CA`. Local MySQL không TLS có thể để `DB_SSL=false` và `DB_SSL_CA` rỗng.
+
 ### Chuẩn bị production
 
 - Cấp SMTP từ nhà cung cấp đã xác minh domain/sender; lưu thông tin xác thực bằng secret manager của môi trường deploy, không commit `.env`. Port 587 thường dùng `SMTP_SECURE=false` (STARTTLS), port 465 dùng `SMTP_SECURE=true`. Kiểm tra trước khi bật traffic:

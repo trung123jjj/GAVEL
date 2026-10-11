@@ -7,10 +7,20 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 const TEST_DB = process.env.TEST_DB_NAME || 'gavel_db_test';
 
 module.exports = async () => {
+    const useDatabaseTls = process.env.DB_SSL === 'true' || Boolean(process.env.DB_SSL_CA);
     const conn = await mysql.createConnection({
         host: process.env.DB_HOST || 'localhost',
         user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD
+        password: process.env.DB_PASSWORD,
+        ...(useDatabaseTls
+            ? {
+                ssl: {
+                    ...(process.env.DB_SSL_CA ? { ca: process.env.DB_SSL_CA } : {}),
+                    minVersion: 'TLSv1.2',
+                    rejectUnauthorized: true
+                }
+            }
+            : {})
     });
     await conn.query(`CREATE DATABASE IF NOT EXISTS \`${TEST_DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
     await conn.end();
