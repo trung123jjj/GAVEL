@@ -174,6 +174,15 @@ docker compose up --build
 
 Trong production, không giữ URL `localhost`: trình duyệt của người dùng phải truy cập được API URL đã được nhúng khi build frontend, đồng thời backend cần cho phép đúng origin frontend.
 
+Nếu frontend Vercel dùng domain mặc định `vercel.app` và backend dùng `onrender.com`, hãy cấu hình Vercel để proxy API cùng origin, tránh cookie đăng nhập cross-site:
+
+```dotenv
+NEXT_PUBLIC_API_URL=/api
+BACKEND_ORIGIN=https://<ten-backend>.onrender.com
+```
+
+`BACKEND_ORIGIN` là biến build/runtime phía server của Next.js; không thêm tiền tố `NEXT_PUBLIC_`. Các rewrite trong `next.config.ts` chuyển `/api`, `/uploads` và `/socket.io` sang backend Render. Trên Render, đặt `CLIENT_URL` là origin Vercel chính xác (không dấu `/` cuối).
+
 ## Chuẩn bị production
 
 - Dùng HTTPS để cookie phiên được bảo vệ; cấu hình đúng `CLIENT_URL`, `PUBLIC_API_URL` và `NEXT_PUBLIC_API_URL`.

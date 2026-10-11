@@ -44,7 +44,7 @@ File `.env.local`:
 NEXT_PUBLIC_API_URL=http://localhost:3001/api
 ```
 
-`next.config.ts` derives the backend image host and upload rewrite from `NEXT_PUBLIC_API_URL`, so upload images work with Next.js `<Image>` in local and production deployments.
+For local development, `next.config.ts` derives the backend image host and upload rewrite from `NEXT_PUBLIC_API_URL`. For Vercel with the default `vercel.app` domain, use `NEXT_PUBLIC_API_URL=/api` and set the server-only `BACKEND_ORIGIN` to the Render service URL. Rewrites proxy API, uploads, and Socket.IO through the frontend origin so authentication cookies remain first-party.
 
 Chạy:
 
