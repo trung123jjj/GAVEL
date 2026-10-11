@@ -34,6 +34,11 @@ const User = sequelize.define('User', {
         type: DataTypes.ENUM('user', 'admin'),
         defaultValue: 'user'
     },
+    is_active: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
+    },
     // Tăng giá trị này để vô hiệu hoá toàn bộ phiên đang đăng nhập của user
     // (dùng cho logout-everywhere / đổi mật khẩu).
     token_version: {

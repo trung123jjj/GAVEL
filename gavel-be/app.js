@@ -21,6 +21,7 @@ const uploadRoutes = require('./routes/upload');
 const userRoutes = require('./routes/users');
 const reviewRoutes = require('./routes/reviews');
 const chatRoutes = require('./routes/chat');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 
@@ -49,6 +50,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
     res.send('API Running');

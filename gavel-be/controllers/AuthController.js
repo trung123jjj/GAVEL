@@ -85,7 +85,7 @@ const AuthController = {
 
             const user = users[0];
             const valid = await bcrypt.compare(password, user.password);
-            if (!valid) {
+            if (!valid || !user.is_active) {
                 return res.status(401).json({ message: 'Tên đăng nhập hoặc mật khẩu không đúng' });
             }
 
@@ -111,9 +111,9 @@ const AuthController = {
             }
 
             const user = await User.findByPk(payload.id);
-            if (!user) {
+            if (!user || !user.is_active) {
                 clearAuthCookies(res);
-                return res.status(401).json({ message: 'Tài khoản không tồn tại' });
+                return res.status(401).json({ message: 'Phiên đăng nhập không hợp lệ hoặc tài khoản đã bị khóa' });
             }
 
             // Đã logout-everywhere / đổi mật khẩu => mọi refresh token cũ mất hiệu lực.
