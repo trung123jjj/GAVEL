@@ -326,42 +326,46 @@ export default function AuctionDetailPage({ params }: { params: Promise<{ id: st
           <div className="rounded-sm bg-white p-5 shadow-sm dark:bg-zinc-900">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h1 className="text-xl font-bold text-zinc-800 dark:text-zinc-100">{item.title}</h1>
-              <button
-                onClick={handleFavoriteToggle}
-                className={`shrink-0 rounded-sm border px-3 py-1.5 text-sm font-medium transition-colors ${
-                  favorited
-                    ? 'border-zinc-200 text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
-                    : 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400'
-                }`}
-              >
-                {favorited ? (
-                  <span className="flex items-center gap-1.5">
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                    </svg>
-                    Đang theo dõi
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1.5">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                    Theo dõi
-                  </span>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setReportError("");
-                  setReportSuccess("");
-                  setShowReportModal(true);
-                }}
-                className="shrink-0 rounded-sm border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-600 transition-colors hover:border-red-300 hover:text-red-600 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-red-800 dark:hover:text-red-400"
-              >
-                Báo cáo
-              </button>
-              {favoriteError && <p role="alert" className="text-xs text-red-600">{favoriteError}</p>}
+              <div className="flex shrink-0 flex-col items-start gap-1">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleFavoriteToggle}
+                    className={`shrink-0 rounded-sm border px-3 py-1.5 text-sm font-medium transition-colors ${
+                      favorited
+                        ? 'border-zinc-200 text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                        : 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400'
+                    }`}
+                  >
+                    {favorited ? (
+                      <span className="flex items-center gap-1.5">
+                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                        </svg>
+                        Đang theo dõi
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        Theo dõi
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReportError("");
+                      setReportSuccess("");
+                      setShowReportModal(true);
+                    }}
+                    className="shrink-0 rounded-sm border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-600 transition-colors hover:border-red-300 hover:text-red-600 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-red-800 dark:hover:text-red-400"
+                  >
+                    Báo cáo
+                  </button>
+                </div>
+                {favoriteError && <p role="alert" className="text-xs text-red-600">{favoriteError}</p>}
+              </div>
             </div>
             {reportSuccess && <p role="status" className="mt-2 text-sm text-green-600">{reportSuccess}</p>}
             {reportError && !showReportModal && <p role="alert" className="mt-2 text-sm text-red-600">{reportError}</p>}
