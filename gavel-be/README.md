@@ -9,7 +9,7 @@ Backend cho dự án GAVEL (đấu giá trực tuyến): Express 5 + Sequelize 6
 - **Message queue (BullMQ + Redis)**: job tự động **đóng phiên đấu giá đúng `end_time`**, tạo đơn hàng (order), gửi thông báo cho người thắng và người bị vượt giá. Nếu Redis không kết nối được khi khởi động hoặc bị mất khi server đang chạy, hệ thống chuyển sang bộ lập lịch in-process thay vì dừng server.
 - **Watchlist theo tài khoản**: danh sách theo dõi được lưu trong bảng `user_watchlist`, đồng bộ qua thiết bị sau khi đăng nhập; người chưa đăng nhập vẫn có thể dùng localStorage ở frontend.
 - **Chống sniping**: đặt giá trong 2 phút cuối tự cộng thêm 2 phút.
-- **Đơn hàng / người thắng cuộc**: bảng `orders` ghi nhận người thắng, giá chốt, trạng thái thanh toán/giao hàng.
+- **Đơn hàng / người thắng cuộc**: khi phiên đóng, người bán và người thắng nhận thông báo; người thắng và người bán theo dõi đơn tại trang Giao dịch. Người mua xác nhận đã thanh toán bên ngoài GAVEL, người bán xác nhận gửi hàng, người mua xác nhận đã nhận. GAVEL không xử lý hoặc xác minh thanh toán.
 - **Đánh giá theo giao dịch thật**: chỉ người thắng phiên mới đánh giá được người bán, mỗi giao dịch một đánh giá.
 - **Xác thực bằng cookie httpOnly**: access token 15 phút + refresh token 30 ngày, không lưu token trong `localStorage` nên XSS không lấy được phiên. Có cơ chế thu hồi phiên qua `users.token_version`.
 - **Khôi phục mật khẩu qua email**: email đăng ký/khôi phục phải xác minh; link đặt lại dùng token ngẫu nhiên một lần, lưu dạng hash và hết hạn sau 30 phút. SMTP cấu hình qua `SMTP_*`; tài khoản cũ có thể thêm email trong menu tài khoản.
@@ -176,6 +176,8 @@ Ngoài ra `script-src` vẫn cần `'unsafe-inline'` vì Next.js inject script n
 | GET | `/api/users/:id` | Hồ sơ người dùng | — |
 | GET | `/api/users/notifications` | Danh sách thông báo | ✅ |
 | POST | `/api/users/notifications/read` | Đánh dấu đã đọc | ✅ |
+| GET | `/api/orders` | Danh sách giao dịch của người mua/người bán | ✅ |
+| PATCH | `/api/orders/:id/status` | Cập nhật theo luồng thanh toán ngoài hệ thống → gửi hàng → nhận hàng | ✅ |
 | GET | `/api/reviews/user/:userId` | Danh sách đánh giá | — |
 | POST | `/api/reviews/user/:userId` | Đánh giá (chỉ khi có giao dịch hoàn tất) | ✅ |
 | GET | `/api/chat/conversations` | Danh sách hội thoại | ✅ |

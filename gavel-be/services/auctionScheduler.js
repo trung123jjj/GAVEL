@@ -99,6 +99,16 @@ async function closeAuction(auctionId) {
         let winner = null;
         let finalPrice = Number(auction.current_price);
 
+        const closeNotifications = [{
+            user_id: auction.seller_id,
+            type: 'auction_closed',
+            title: 'Phiên đấu giá đã kết thúc',
+            message: topBid
+                ? `Phiên "${auction.title}" kết thúc. Người thắng: ${topBid.bidder?.username || 'N/A'} với giá ${Number(topBid.amount).toLocaleString('vi-VN')}đ. Hãy vào mục Giao dịch để liên hệ người mua và thống nhất giao nhận.`
+                : `Phiên "${auction.title}" đã kết thúc nhưng không có lượt đặt giá.`,
+            auction_id: auctionId
+        }];
+
         if (topBid) {
             winner = { id: topBid.user_id, username: topBid.bidder?.username || 'N/A' };
             finalPrice = Number(topBid.amount);
@@ -118,23 +128,15 @@ async function closeAuction(auctionId) {
                 console.log(`[scheduler] Order #${order.id} created for auction #${auctionId}`);
             }
 
-            await Notification.bulkCreate([
-                {
-                    user_id: auction.seller_id,
-                    type: 'auction_closed',
-                    title: 'Phiên đấu giá đã kết thúc',
-                    message: `Phiên "${auction.title}" kết thúc. Người thắng: ${winner.username} với giá ${finalPrice.toLocaleString('vi-VN')}đ`,
-                    auction_id: auctionId
-                },
-                {
-                    user_id: topBid.user_id,
-                    type: 'won',
-                    title: 'Chúc mừng! Bạn đã thắng đấu giá',
-                    message: `Bạn đã thắng phiên "${auction.title}" với giá ${finalPrice.toLocaleString('vi-VN')}đ`,
-                    auction_id: auctionId
-                }
-            ], { transaction });
+            closeNotifications.push({
+                user_id: topBid.user_id,
+                type: 'won',
+                title: 'Chúc mừng! Bạn đã thắng đấu giá',
+                message: `Bạn đã thắng phiên "${auction.title}" với giá ${finalPrice.toLocaleString('vi-VN')}đ. Vào mục Giao dịch để nhắn tin với người bán và thống nhất thanh toán, giao nhận bên ngoài GAVEL.`,
+                auction_id: auctionId
+            });
         }
+        await Notification.bulkCreate(closeNotifications, { transaction });
 
         await transaction.commit();
 

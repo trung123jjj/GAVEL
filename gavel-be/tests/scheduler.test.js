@@ -77,6 +77,9 @@ describe('Auction scheduler', () => {
 
             expect((await Auction.findByPk(auction.id)).status).toBe('ended');
             expect(await Order.count({ where: { auction_id: auction.id } })).toBe(0);
+            const sellerNotice = await Notification.findOne({ where: { auction_id: auction.id } });
+            expect(sellerNotice.user_id).toBe(seller.user.id);
+            expect(sellerNotice.message).toContain('không có lượt đặt giá');
         });
 
         test('gọi lần hai không tạo trùng order (idempotent)', async () => {
