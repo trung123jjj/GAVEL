@@ -148,6 +148,29 @@ const UserController = {
         }
     },
 
+    async deleteNotification(req, res, next) {
+        try {
+            const notificationId = Number(req.params.notificationId);
+            if (!Number.isSafeInteger(notificationId) || notificationId <= 0) {
+                return res.status(400).json({ message: 'Mã thông báo không hợp lệ' });
+            }
+
+            const deleted = await Notification.destroy({
+                where: {
+                    id: notificationId,
+                    user_id: Number(req.user.id)
+                }
+            });
+            if (!deleted) {
+                return res.status(404).json({ message: 'Không tìm thấy thông báo' });
+            }
+
+            return res.status(204).end();
+        } catch (err) {
+            return next(err);
+        }
+    },
+
     async getWatchlist(req, res, next) {
         try {
             const watchlist = await UserWatchlist.findAll({

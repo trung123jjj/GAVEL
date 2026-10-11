@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 router.put('/avatar', auth, UserController.updateAvatar);
 router.get('/notifications', auth, UserController.getNotifications);
 router.post('/notifications/read', auth, UserController.markNotificationsRead);
+router.delete('/notifications/:notificationId', auth, UserController.deleteNotification);
 router.get('/watchlist', auth, UserController.getWatchlist);
 router.post('/watchlist/sync', auth, UserController.syncWatchlist);
 router.post('/watchlist/:auctionId', auth, UserController.addWatchlistItem);

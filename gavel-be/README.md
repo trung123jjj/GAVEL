@@ -204,6 +204,7 @@ Ngoài ra `script-src` vẫn cần `'unsafe-inline'` vì Next.js inject script n
 | GET | `/api/users/:id` | Hồ sơ người dùng | — |
 | GET | `/api/users/notifications` | Danh sách thông báo | ✅ |
 | POST | `/api/users/notifications/read` | Đánh dấu đã đọc | ✅ |
+| DELETE | `/api/users/notifications/:notificationId` | Xóa thông báo của tài khoản hiện tại | ✅ |
 | GET | `/api/orders` | Danh sách giao dịch của người mua/người bán | ✅ |
 | PATCH | `/api/orders/:id/status` | Cập nhật theo luồng thanh toán ngoài hệ thống → gửi hàng → nhận hàng | ✅ |
 | GET | `/api/reviews/user/:userId` | Danh sách đánh giá | — |

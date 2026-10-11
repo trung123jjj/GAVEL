@@ -169,6 +169,9 @@ export const api = {
   markNotificationsRead: () =>
     request('/users/notifications/read', { method: 'POST' }),
 
+  deleteNotification: (id: number) =>
+    request(`/users/notifications/${id}`, { method: 'DELETE' }),
+
   getAdminUsers: (params: { page: number; limit: number; q?: string }) => {
     const query = new URLSearchParams({
       page: String(params.page),

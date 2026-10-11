@@ -22,6 +22,7 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [markingRead, setMarkingRead] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -56,6 +57,22 @@ export default function NotificationsPage() {
     }
   }
 
+  async function deleteNotification(notification: NotificationItem) {
+    setDeletingId(notification.id);
+    setError("");
+    try {
+      await api.deleteNotification(notification.id);
+      setNotifications((current) => current.filter((item) => item.id !== notification.id));
+      if (!notification.read) {
+        setUnreadCount((current) => Math.max(0, current - 1));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể xóa thông báo");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-zinc-100 dark:bg-zinc-950">
       <Header />
@@ -86,12 +103,29 @@ export default function NotificationsPage() {
             {notifications.map((notification) => (
               <li key={notification.id} className={`rounded-sm p-4 shadow-sm ${notification.read ? "bg-white dark:bg-zinc-900" : "border-l-4 border-primary bg-sky-50 dark:bg-sky-950/30"}`}>
                 <div className="flex items-start justify-between gap-3">
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="font-semibold text-zinc-800 dark:text-zinc-100">{notification.title}</p>
                     <p className="mt-1 whitespace-pre-line text-sm leading-6 text-zinc-600 dark:text-zinc-300">{notification.message}</p>
                     <p className="mt-2 text-xs text-zinc-400">{new Date(notification.createdAt).toLocaleString("vi-VN")}</p>
                   </div>
-                  {!notification.read && <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-primary" aria-label="Chưa đọc" />}
+                  <div className="flex shrink-0 items-center gap-3">
+                    {!notification.read && <span className="mt-1 h-2.5 w-2.5 rounded-full bg-primary" aria-label="Chưa đọc" />}
+                    <button
+                      type="button"
+                      onClick={() => void deleteNotification(notification)}
+                      disabled={deletingId === notification.id}
+                      aria-label={`Xóa thông báo: ${notification.title}`}
+                      className="flex h-9 w-9 items-center justify-center rounded-sm text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                    >
+                      {deletingId === notification.id ? (
+                        <span className="text-xs">...</span>
+                      ) : (
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18m-2 0-.9 14H5.9L5 6m4 0V4h6v2m-5 4v6m4-6v6" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 {notification.auctionId && (
                   <Link href={`/auction/${notification.auctionId}`} className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
