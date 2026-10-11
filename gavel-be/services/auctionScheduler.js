@@ -77,7 +77,7 @@ async function closeAuction(auctionId) {
             transaction,
             lock: transaction.LOCK.UPDATE
         });
-        if (!auction || auction.status === 'ended') {
+        if (!auction || auction.status === 'ended' || auction.removed_at) {
             await transaction.rollback();
             return;
         }
@@ -164,7 +164,7 @@ async function startAuction(auctionId) {
             transaction,
             lock: transaction.LOCK.UPDATE
         });
-        if (!auction || auction.status === 'ended') {
+        if (!auction || auction.status === 'ended' || auction.removed_at) {
             await transaction.rollback();
             return;
         }
@@ -351,10 +351,12 @@ async function rescheduleAllActiveAuctions() {
     const now = Date.now();
     const auctions = await Auction.findAll({
         where: { status: { [Op.in]: ['pending', 'active'] } },
-        attributes: ['id', 'start_time', 'end_time', 'status']
+        attributes: ['id', 'start_time', 'end_time', 'status'],
+        paranoid: false
     });
 
     for (const a of auctions) {
+        if (a.removed_at) continue;
         const start = new Date(a.start_time).getTime();
         const end = new Date(a.end_time).getTime();
 

@@ -3,7 +3,7 @@ const { Op } = require('sequelize');
 const { scheduleStart, scheduleClose } = require('../services/auctionScheduler');
 
 function computeStatus(a, now = new Date()) {
-    return now < new Date(a.start_time) ? 'pending' : now > new Date(a.end_time) ? 'ended' : 'active';
+    return now < new Date(a.start_time) ? 'pending' : now >= new Date(a.end_time) ? 'ended' : 'active';
 }
 
 function mapAuction(a, now = new Date()) {
@@ -53,6 +53,7 @@ const AuctionController = {
             const offset = (page - 1) * limit;
 
             const where = {};
+            where.removed_at = null;
             if (ids) where.id = { [Op.in]: ids };
             if (req.query.q) {
                 where[Op.or] = [
@@ -115,7 +116,8 @@ const AuctionController = {
 
     async findById(req, res, next) {
         try {
-            const auction = await Auction.findByPk(req.params.id, {
+            const auction = await Auction.findOne({
+                where: { id: req.params.id, removed_at: null },
                 include: [
                     { model: User, as: 'seller', attributes: ['id', 'username', 'avatar'] },
                     { model: Category, as: 'categories', attributes: ['id', 'name'], through: { attributes: [] } },
@@ -169,6 +171,7 @@ const AuctionController = {
         try {
             const auction = await Auction.findByPk(req.params.id);
             if (!auction) return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+            if (auction.removed_at) return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
             if (Number(auction.seller_id) !== req.user.id) {
                 return res.status(403).json({ message: 'Bạn không có quyền chỉnh sửa sản phẩm này' });
             }
@@ -240,6 +243,7 @@ const AuctionController = {
         try {
             const auction = await Auction.findByPk(req.params.id);
             if (!auction) return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+            if (auction.removed_at) return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
             if (Number(auction.seller_id) !== req.user.id) {
                 return res.status(403).json({ message: 'Bạn không có quyền xóa sản phẩm này' });
             }

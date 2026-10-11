@@ -34,7 +34,7 @@ const UserController = {
             }
 
             const auctions = await Auction.findAll({
-                where: { seller_id: user.id },
+                where: { seller_id: user.id, removed_at: null },
                 include: [
                     { model: Category, as: 'categories', attributes: ['id', 'name'], through: { attributes: [] } },
                     { model: Bid, as: 'bids', attributes: ['id'] }

@@ -31,6 +31,10 @@ const BidController = {
                 await transaction.rollback();
                 return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
             }
+            if (auction.removed_at) {
+                await transaction.rollback();
+                return res.status(404).json({ message: 'Phiên đấu giá không còn khả dụng' });
+            }
 
             const now = new Date();
             const status = now < new Date(auction.start_time) ? 'pending' : now >= new Date(auction.end_time) ? 'ended' : 'active';

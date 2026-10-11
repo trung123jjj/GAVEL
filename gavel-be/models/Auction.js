@@ -46,6 +46,21 @@ const Auction = sequelize.define('Auction', {
     end_time: {
         type: DataTypes.DATE,
         allowNull: false
+    },
+    removed_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
+    },
+    removed_by: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null
+    },
+    removal_reason: {
+        type: DataTypes.STRING(1000),
+        allowNull: true,
+        defaultValue: null
     }
 }, {
     tableName: 'auctions'
