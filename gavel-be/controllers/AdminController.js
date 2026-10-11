@@ -218,13 +218,18 @@ const AdminController = {
             ]);
             if (cancelledOrder) recipientIds.add(Number(order.buyer_id));
 
-            await Notification.bulkCreate([...recipientIds].map((userId) => ({
-                user_id: userId,
-                type: 'system',
-                title: 'Phiên đấu giá đã bị quản trị viên gỡ',
-                message: `Phiên "${auction.title}" đã được gỡ khỏi danh sách công khai. Lý do: ${reason}${cancelledOrder ? ' Đơn hàng chưa hoàn tất đã được hủy.' : ''}`,
-                auction_id: auctionId
-            })), { transaction });
+            await Notification.bulkCreate([...recipientIds].map((userId) => {
+                const isSeller = userId === Number(auction.seller_id);
+                return {
+                    user_id: userId,
+                    type: 'system',
+                    title: isSeller
+                        ? 'Sản phẩm của bạn đã bị quản trị viên gỡ'
+                        : 'Sản phẩm bạn đã tham gia đấu giá đã bị gỡ',
+                    message: `${isSeller ? 'Sản phẩm của bạn' : 'Sản phẩm'} "${auction.title}" đã bị gỡ khỏi danh sách công khai. Lý do: ${reason}${cancelledOrder ? ' Đơn hàng chưa hoàn tất đã được hủy.' : ''}`,
+                    auction_id: auctionId
+                };
+            }), { transaction });
 
             await transaction.commit();
             return res.json({

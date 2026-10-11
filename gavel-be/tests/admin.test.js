@@ -147,6 +147,14 @@ describe('Admin user management', () => {
         expect(order.status).toBe('cancelled');
         expect(await Bid.count({ where: { auction_id: auction.id } })).toBe(1);
         expect(await Notification.count({ where: { auction_id: auction.id } })).toBe(2);
+        const sellerNotification = await Notification.findOne({
+            where: { auction_id: auction.id, user_id: seller.user.id }
+        });
+        expect(sellerNotification).toMatchObject({
+            type: 'system',
+            title: 'Sản phẩm của bạn đã bị quản trị viên gỡ'
+        });
+        expect(sellerNotification.message).toContain('Lý do: Sản phẩm vi phạm quy định đăng bán');
 
         const publicDetail = await request(app).get(`/api/auctions/${auction.id}`);
         expect(publicDetail.status).toBe(404);
