@@ -11,6 +11,7 @@ function SignInContent() {
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered") === "1";
   const verifyEmail = searchParams.get("verifyEmail") === "1";
+  const returnTo = searchParams.get("returnTo");
   const [form, setForm] = useState({ username: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +38,10 @@ function SignInContent() {
       localStorage.setItem("user", JSON.stringify(data.user));
       disconnectSocket();
       notifySessionChanged();
-      router.push("/");
+      const safeReturnTo = returnTo?.startsWith("/") && !returnTo.startsWith("//")
+        ? returnTo
+        : "/";
+      router.replace(safeReturnTo);
     } catch (err: unknown) {
       setErrors({ username: err instanceof Error ? err.message : "Đăng nhập thất bại" });
     } finally {

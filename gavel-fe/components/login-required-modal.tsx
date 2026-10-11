@@ -1,11 +1,11 @@
-import Link from "next/link";
-
 export default function LoginRequiredModal({
   message,
   onClose,
+  onLogin,
 }: {
   message: string;
   onClose: () => void;
+  onLogin: () => void;
 }) {
   return (
     <div
@@ -36,12 +36,13 @@ export default function LoginRequiredModal({
           >
             Đóng
           </button>
-          <Link
-            href="/auth/signin"
+          <button
+            type="button"
+            onClick={onLogin}
             className="w-full rounded-sm bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover sm:w-auto"
           >
             Đăng nhập
-          </Link>
+          </button>
         </div>
       </section>
     </div>
