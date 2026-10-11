@@ -13,7 +13,7 @@ Backend cho dự án GAVEL (đấu giá trực tuyến): Express 5 + Sequelize 6
 - **Đánh giá theo giao dịch thật**: chỉ người thắng phiên mới đánh giá được người bán, mỗi giao dịch một đánh giá.
 - **Xác thực bằng cookie httpOnly**: access token 15 phút + refresh token 30 ngày, không lưu token trong `localStorage` nên XSS không lấy được phiên. Có cơ chế thu hồi phiên qua `users.token_version`.
 - **Khôi phục mật khẩu qua email**: email đăng ký/khôi phục phải xác minh; link đặt lại dùng token ngẫu nhiên một lần, lưu dạng hash và hết hạn sau 30 phút. SMTP cấu hình qua `SMTP_*`; tài khoản cũ có thể thêm email trong menu tài khoản.
-- **Quản trị tài khoản**: Admin xem danh sách tài khoản có phân trang và khóa/mở khóa; mọi API admin yêu cầu role `admin`, khóa tài khoản thu hồi ngay các phiên hiện có.
+- **Quản trị**: Admin xem/tìm kiếm tài khoản, khóa/mở khóa, và quản lý phiên đấu giá. Gỡ sản phẩm sẽ ẩn khỏi API công khai, giữ lịch sử giá, hủy đơn chưa hoàn tất, giữ đơn đã hoàn tất và thông báo các bên liên quan; thao tác yêu cầu lý do và role `admin`.
 - **Phân quyền phòng chat**: mỗi người chỉ vào được phòng `conv_<id>` mình là thành viên.
 - **Chống lạm dụng socket**: rate limit riêng cho gửi tin nhắn, đọc tin nhắn và join phòng đấu giá.
 - **Upload có bảo mật**: yêu cầu xác thực + kiểm tra **magic bytes** thật của file.
@@ -82,6 +82,8 @@ Migration nằm trong `migrations/`, tên file `<timestamp>-<slug>.js`, mỗi c�
 
 - `GET /api/admin/users?page=1&limit=20&q=ten-dang-nhap`: liệt kê tài khoản, không trả password hoặc token.
 - `PATCH /api/admin/users/:id/status` với `{ "isActive": false }` hoặc `{ "isActive": true }`: khóa/mở khóa tài khoản.
+- `GET /api/admin/auctions?page=1&limit=20&q=keyword&status=active`: tìm/lọc phiên đấu giá, bao gồm cả phiên đã gỡ khi dùng `status=removed` hoặc `status=all`.
+- `DELETE /api/admin/auctions/:id` với `{ "reason": "..." }`: gỡ phiên khỏi danh sách công khai, giữ lịch sử và xử lý đơn hàng chưa hoàn tất.
 - Tài khoản đầu tiên cần được cấp role Admin thủ công bởi người có quyền truy cập DB, ví dụ: `UPDATE users SET role = 'admin' WHERE username = 'ten-dang-nhap';`. Không có API công khai để tự nâng quyền.
 
 ### Chạy test

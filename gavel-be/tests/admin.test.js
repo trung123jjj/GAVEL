@@ -1,10 +1,11 @@
-const { request, app, resetDb, registerUser, auth } = require('./helpers');
-const { User } = require('../models');
+const { request, app, resetDb, registerUser, auth, accessTokenFrom, activeAuctionPayload } = require('./helpers');
+const { User, Auction, Bid, Order, Notification } = require('../models');
 
 describe('Admin user management', () => {
     let adminUser;
     let adminToken;
     let regularUser;
+    let bidder;
 
     beforeAll(async () => {
         await resetDb();
@@ -13,6 +14,7 @@ describe('Admin user management', () => {
         await adminUser.update({ role: 'admin' });
         adminToken = adminAccount.token;
         regularUser = await registerUser('regular_test');
+        bidder = await registerUser('auction_bidder');
     });
 
     test('denies unauthenticated and non-admin access', async () => {
@@ -31,7 +33,7 @@ describe('Admin user management', () => {
             .set(auth(adminToken));
         expect(response.status).toBe(200);
         expect(response.body.users).toHaveLength(1);
-        expect(response.body.total).toBe(2);
+        expect(response.body.total).toBe(3);
         expect(response.body.users[0]).not.toHaveProperty('password');
         expect(response.body.users[0]).not.toHaveProperty('token_version');
     });
@@ -70,6 +72,7 @@ describe('Admin user management', () => {
             .post('/api/auth/login')
             .send({ username: 'regular_test', password: 'password123' });
         expect(loginAfterUnlock.status).toBe(200);
+        regularUser.token = accessTokenFrom(loginAfterUnlock);
     });
 
     test('prevents self-locking and rejects malformed status updates', async () => {
@@ -84,5 +87,108 @@ describe('Admin user management', () => {
             .set(auth(adminToken))
             .send({ isActive: 'false' });
         expect(invalidStatus.status).toBe(400);
+    });
+
+    test('lists auction moderation data and restricts the endpoint to admins', async () => {
+        const seller = await registerUser('admin_auction_seller');
+        const created = await request(app)
+            .post('/api/auctions')
+            .set(auth(seller.token))
+            .send(activeAuctionPayload({ title: 'Sản phẩm cần kiểm duyệt' }));
+
+        const denied = await request(app)
+            .get('/api/admin/auctions')
+            .set(auth(regularUser.token));
+        expect(denied.status).toBe(403);
+
+        const response = await request(app)
+            .get('/api/admin/auctions?q=kiểm%20duyệt&page=1&limit=10')
+            .set(auth(adminToken));
+        expect(response.status).toBe(200);
+        expect(response.body.auctions).toHaveLength(1);
+        expect(response.body.auctions[0]).toMatchObject({
+            id: created.body.id,
+            title: 'Sản phẩm cần kiểm duyệt',
+            bidCount: 0,
+            status: 'active',
+            seller: { id: seller.user.id, username: seller.user.username }
+        });
+    });
+
+    test('removes a bid auction from public listings, preserves its history and cancels unfinished order', async () => {
+        const seller = await registerUser('moderated_seller');
+        const created = await request(app)
+            .post('/api/auctions')
+            .set(auth(seller.token))
+            .send(activeAuctionPayload({ title: 'Sản phẩm vi phạm' }));
+        const auction = await Auction.findByPk(created.body.id);
+        await Bid.create({ auction_id: auction.id, user_id: bidder.user.id, amount: 150000 });
+        const order = await Order.create({
+            auction_id: auction.id,
+            seller_id: seller.user.id,
+            buyer_id: bidder.user.id,
+            amount: 150000,
+            status: 'paid'
+        });
+
+        const removed = await request(app)
+            .delete(`/api/admin/auctions/${auction.id}`)
+            .set(auth(adminToken))
+            .send({ reason: 'Sản phẩm vi phạm quy định đăng bán' });
+        expect(removed.status).toBe(200);
+        expect(removed.body.orderStatus).toBe('cancelled');
+
+        await auction.reload();
+        await order.reload();
+        expect(auction.removed_at).toBeTruthy();
+        expect(auction.removed_by).toBe(adminUser.id);
+        expect(auction.removal_reason).toBe('Sản phẩm vi phạm quy định đăng bán');
+        expect(auction.status).toBe('ended');
+        expect(order.status).toBe('cancelled');
+        expect(await Bid.count({ where: { auction_id: auction.id } })).toBe(1);
+        expect(await Notification.count({ where: { auction_id: auction.id } })).toBe(2);
+
+        const publicDetail = await request(app).get(`/api/auctions/${auction.id}`);
+        expect(publicDetail.status).toBe(404);
+        const publicList = await request(app).get(`/api/auctions?ids=${auction.id}`);
+        expect(publicList.status).toBe(200);
+        expect(publicList.body.total).toBe(0);
+
+        const removedList = await request(app)
+            .get('/api/admin/auctions?status=removed')
+            .set(auth(adminToken));
+        expect(removedList.body.auctions).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: auction.id,
+                status: 'removed',
+                removalReason: 'Sản phẩm vi phạm quy định đăng bán',
+                orderStatus: 'cancelled'
+            })
+        ]));
+    });
+
+    test('keeps completed orders unchanged when their auction listing is removed', async () => {
+        const seller = await registerUser('completed_seller');
+        const created = await request(app)
+            .post('/api/auctions')
+            .set(auth(seller.token))
+            .send(activeAuctionPayload({ title: 'Sản phẩm giao dịch hoàn tất' }));
+        const auction = await Auction.findByPk(created.body.id);
+        const order = await Order.create({
+            auction_id: auction.id,
+            seller_id: seller.user.id,
+            buyer_id: bidder.user.id,
+            amount: 150000,
+            status: 'completed'
+        });
+
+        const removed = await request(app)
+            .delete(`/api/admin/auctions/${auction.id}`)
+            .set(auth(adminToken))
+            .send({ reason: 'Vi phạm được phát hiện sau giao dịch' });
+        expect(removed.status).toBe(200);
+        expect(removed.body.orderStatus).toBe('completed');
+        await order.reload();
+        expect(order.status).toBe('completed');
     });
 });
