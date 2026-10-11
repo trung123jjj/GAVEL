@@ -8,6 +8,7 @@ router.get('/user/:userId', ReviewController.getByUser);
 
 router.post('/user/:userId', auth, [
     body('rating').isInt({ min: 1, max: 5 }).withMessage('Rating must be 1-5'),
+    validate
 ], ReviewController.create);
 
 module.exports = router;

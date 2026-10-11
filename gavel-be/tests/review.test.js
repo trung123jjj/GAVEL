@@ -64,4 +64,16 @@ describe('Review (ràng buộc giao dịch thực)', () => {
             .send({ rating: 5, comment: 'Tự khen' });
         expect(res.status).toBe(400);
     });
+
+    test('từ chối rating nằm ngoài khoảng 1-5 trước khi gọi controller', async () => {
+        const res = await request(app)
+            .post(`/api/reviews/user/${sellerId}`)
+            .set(auth(buyerToken))
+            .send({ rating: 6, comment: 'Rating không hợp lệ' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.errors).toEqual(expect.arrayContaining([
+            expect.objectContaining({ msg: 'Rating must be 1-5' })
+        ]));
+    });
 });
