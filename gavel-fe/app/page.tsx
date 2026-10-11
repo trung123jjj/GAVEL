@@ -49,9 +49,15 @@ function HomeContent() {
                 <p className="mt-2 text-sm md:text-lg">Khám phá hàng ngàn sản phẩm đấu giá hấp dẫn</p>
                 <a
                   href="#listings"
+                  onClick={(event) => {
+                    const listings = document.getElementById("listings");
+                    if (!listings) return;
+                    event.preventDefault();
+                    listings.scrollIntoView({ behavior: "smooth" });
+                  }}
                   className="mt-4 inline-block rounded-full bg-white px-6 py-2 text-sm font-semibold text-primary transition-colors hover:bg-sky-50"
                 >
-                  Khám phá ngay
+                  Xem phiên đang diễn ra
                 </a>
               </div>
             </div>
