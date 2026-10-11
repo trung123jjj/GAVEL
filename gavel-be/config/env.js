@@ -35,13 +35,15 @@ if (isWeakSecret(process.env.JWT_SECRET)) {
     process.exit(1);
 }
 
+const isTiDBCloudHost = /\.tidbcloud\.com$/i.test(process.env.DB_HOST || '');
+
 module.exports = {
     JWT_SECRET: process.env.JWT_SECRET,
     CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:3000',
     // Origin backend nhìn từ phía trình duyệt — dùng để dựng CSP (img/connect-src).
     PUBLIC_API_URL: process.env.PUBLIC_API_URL || 'http://localhost:3001',
     REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
-    DB_SSL: process.env.DB_SSL === 'true',
+    DB_SSL: process.env.DB_SSL === 'true' || isTiDBCloudHost,
     DB_SSL_CA: process.env.DB_SSL_CA,
     SMTP_HOST: process.env.SMTP_HOST,
     SMTP_PORT: Number(process.env.SMTP_PORT || 587),
