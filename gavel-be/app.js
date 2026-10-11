@@ -22,6 +22,7 @@ const userRoutes = require('./routes/users');
 const reviewRoutes = require('./routes/reviews');
 const chatRoutes = require('./routes/chat');
 const adminRoutes = require('./routes/admin');
+const orderRoutes = require('./routes/orders');
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/orders', orderRoutes);
 
 app.get('/', (req, res) => {
     res.send('API Running');

@@ -58,6 +58,11 @@ const ReviewController = {
                     message: 'Bạn chỉ có thể đánh giá người này sau khi hoàn tất một giao dịch đấu giá với họ'
                 });
             }
+            if (order.status !== 'completed') {
+                return res.status(403).json({
+                    message: 'Bạn chỉ có thể đánh giá sau khi xác nhận đã nhận hàng và hoàn tất giao dịch'
+                });
+            }
 
             // Mỗi giao dịch chỉ được đánh giá 1 lần
             const existing = await Review.findOne({ where: { order_id: order.id } });

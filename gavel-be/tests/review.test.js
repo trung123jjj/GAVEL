@@ -32,6 +32,24 @@ describe('Review (ràng buộc giao dịch thực)', () => {
         expect(res.status).toBe(403);
     });
 
+    test('không thể đánh giá khi đơn hàng chưa hoàn tất', async () => {
+        const pendingOrder = await Order.create({
+            auction_id: auctionId,
+            seller_id: sellerId,
+            buyer_id: buyerId,
+            amount: 200000,
+            status: 'pending'
+        });
+
+        const res = await request(app)
+            .post(`/api/reviews/user/${sellerId}`)
+            .set(auth(buyerToken))
+            .send({ rating: 5, comment: 'Chưa nhận hàng' });
+
+        expect(res.status).toBe(403);
+        await pendingOrder.destroy();
+    });
+
     test('đánh giá thành công khi đã có giao dịch (người thắng phiên)', async () => {
         await Order.create({
             auction_id: auctionId,
