@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import AdminRemoveAuctionModal from "@/components/admin-remove-auction-modal";
 import { ApiError, api } from "@/lib/api";
 
 type ReportStatus = "pending" | "resolved" | "dismissed";
@@ -56,6 +57,7 @@ export default function AdminReportsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busyReportId, setBusyReportId] = useState<number | null>(null);
+  const [reportToRemove, setReportToRemove] = useState<AuctionReport | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -125,12 +127,8 @@ export default function AdminReportsPage() {
     }
   }
 
-  async function removeReportedAuction(report: AuctionReport) {
+  async function removeReportedAuction(report: AuctionReport, reason: string) {
     if (!report.auction || report.auction.removedAt) return;
-    const reason = window.prompt(`Nhập lý do gỡ sản phẩm "${report.auction.title}":`)?.trim();
-    if (!reason) return;
-    if (!window.confirm("Gỡ sản phẩm khỏi trang công khai, giữ lịch sử đấu giá và hủy đơn chưa hoàn tất?")) return;
-
     setBusyReportId(report.id);
     setError("");
     setNotice("");
@@ -147,6 +145,7 @@ export default function AdminReportsPage() {
         : current
       );
       setNotice(`Đã gỡ "${report.auction.title}" và xử lý các báo cáo đang chờ của sản phẩm.`);
+      setReportToRemove(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Không thể gỡ sản phẩm");
     } finally {
@@ -226,7 +225,7 @@ export default function AdminReportsPage() {
                           {report.auction && !report.auction.removedAt && (
                             <>
                               <Link href={`/auction/${report.auction.id}`} className="rounded-sm border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">Xem sản phẩm</Link>
-                              <button onClick={() => void removeReportedAuction(report)} disabled={busyReportId === report.id} className="rounded-sm bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50">
+                              <button onClick={() => setReportToRemove(report)} disabled={busyReportId === report.id} className="rounded-sm bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50">
                                 {busyReportId === report.id ? "Đang xử lý..." : "Gỡ sản phẩm"}
                               </button>
                             </>
@@ -255,6 +254,15 @@ export default function AdminReportsPage() {
         )}
       </main>
       <Footer />
+      {reportToRemove?.auction && (
+        <AdminRemoveAuctionModal
+          key={reportToRemove.id}
+          auctionTitle={reportToRemove.auction.title}
+          submitting={busyReportId === reportToRemove.id}
+          onCancel={() => setReportToRemove(null)}
+          onConfirm={(reason) => void removeReportedAuction(reportToRemove, reason)}
+        />
+      )}
     </div>
   );
 }

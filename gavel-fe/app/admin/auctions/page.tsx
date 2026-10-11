@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import AdminRemoveAuctionModal from "@/components/admin-remove-auction-modal";
 import { ApiError, api } from "@/lib/api";
 
 type AdminAuction = {
@@ -59,6 +60,7 @@ export default function AdminAuctionsPage() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState<number | null>(null);
+  const [auctionToRemove, setAuctionToRemove] = useState<AdminAuction | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
@@ -127,11 +129,7 @@ export default function AdminAuctionsPage() {
     setLoading(true);
   }
 
-  async function removeAuction(auction: AdminAuction) {
-    const reason = window.prompt(`Nhập lý do gỡ sản phẩm "${auction.title}" (bắt buộc):`)?.trim();
-    if (!reason) return;
-    if (!window.confirm("Sản phẩm sẽ bị ẩn khỏi trang công khai. Lịch sử giá được giữ lại; đơn chưa hoàn tất sẽ bị hủy. Tiếp tục?")) return;
-
+  async function removeAuction(auction: AdminAuction, reason: string) {
     setRemovingId(auction.id);
     setError("");
     setNotice("");
@@ -147,6 +145,7 @@ export default function AdminAuctionsPage() {
         ));
       }
       setNotice(`Đã gỡ "${auction.title}". Lịch sử đấu giá được giữ lại.`);
+      setAuctionToRemove(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Không thể gỡ sản phẩm");
     } finally {
@@ -246,7 +245,7 @@ export default function AdminAuctionsPage() {
                       </div>
                       {auction.status !== "removed" && (
                         <button
-                          onClick={() => void removeAuction(auction)}
+                          onClick={() => setAuctionToRemove(auction)}
                           disabled={removingId === auction.id}
                           className="self-start rounded-sm bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 sm:self-center"
                         >
@@ -269,6 +268,14 @@ export default function AdminAuctionsPage() {
         )}
       </main>
       <Footer />
+      {auctionToRemove && (
+        <AdminRemoveAuctionModal
+          auctionTitle={auctionToRemove.title}
+          submitting={removingId === auctionToRemove.id}
+          onCancel={() => setAuctionToRemove(null)}
+          onConfirm={(reason) => void removeAuction(auctionToRemove, reason)}
+        />
+      )}
     </div>
   );
 }
